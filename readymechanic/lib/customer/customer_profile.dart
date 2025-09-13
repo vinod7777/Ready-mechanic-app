@@ -9,25 +9,10 @@ class CustomerProfileScreen extends StatefulWidget {
 }
 
 class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
-  int _selectedIndex = 3; // Profile tab
   final _primaryColor = const Color(0xFFea2a33);
   final _secondaryColor = const Color(0xFFf7f7f7);
   final _textPrimary = const Color(0xFF1a1a1a);
   final _textSecondary = const Color(0xFF6b7280);
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    // TODO: Handle navigation to other screens based on index
-    if (index == 0) {
-      Navigator.pushReplacementNamed(context, '/customer_dashboard');
-    } else if (index == 1) {
-      Navigator.pushReplacementNamed(context, '/customer_booking');
-    } else if (index == 2) {
-      Navigator.pushReplacementNamed(context, '/customer_vehicles');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,36 +76,6 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month_outlined),
-            label: 'Bookings',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.directions_car_outlined),
-            label: 'Vehicles',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: _primaryColor,
-        unselectedItemColor: _textSecondary,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        elevation: 8,
-        showUnselectedLabels: true,
-        selectedLabelStyle: GoogleFonts.splineSans(fontWeight: FontWeight.w600),
-        unselectedLabelStyle: GoogleFonts.splineSans(),
       ),
     );
   }
@@ -189,7 +144,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                 borderRadius: BorderRadius.circular(26),
               ),
               elevation: 5,
-              shadowColor: _primaryColor.withOpacity(0.4),
+              shadowColor: _primaryColor.withAlpha((255 * 0.4).round()),
             ),
             child: Text(
               'Save Changes',

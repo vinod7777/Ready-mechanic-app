@@ -10,26 +10,7 @@ class CustomerDashboardScreen extends StatefulWidget {
 }
 
 class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
-  int _selectedIndex = 0;
   final _primaryColor = const Color(0xFFea2a33);
-
-  void _onItemTapped(int index) {
-    if (index == 0) {
-      setState(() {
-        _selectedIndex = index;
-      });
-    } else if (index == 1) {
-      Navigator.pushNamed(context, '/customer_booking');
-    } else if (index == 2) {
-      Navigator.pushNamed(context, '/customer_vehicles');
-    } else if (index == 3) {
-      Navigator.pushNamed(context, '/customer_profile');
-    } else {
-      setState(() {
-        _selectedIndex = index;
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,45 +71,11 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
                   borderRadius: BorderRadius.circular(30),
                 ),
                 elevation: 5,
-                shadowColor: _primaryColor.withOpacity(0.4),
+                shadowColor: _primaryColor.withAlpha((255 * 0.4).round()),
               ),
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            activeIcon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.event_note_outlined),
-            activeIcon: Icon(Icons.event_note),
-            label: 'Bookings',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.directions_car_outlined),
-            activeIcon: Icon(Icons.directions_car),
-            label: 'Vehicles',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: _primaryColor,
-        unselectedItemColor: Colors.grey[600],
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        elevation: 8,
-        showUnselectedLabels: true,
-        selectedLabelStyle: GoogleFonts.splineSans(fontWeight: FontWeight.w600),
-        unselectedLabelStyle: GoogleFonts.splineSans(),
       ),
     );
   }
@@ -157,7 +104,7 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withAlpha((255 * 0.1).round()),
             spreadRadius: 1,
             blurRadius: 10,
             offset: const Offset(0, 4),

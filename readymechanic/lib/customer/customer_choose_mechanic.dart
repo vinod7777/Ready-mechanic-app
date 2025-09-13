@@ -12,11 +12,7 @@ class CustomerChooseMechanicScreen extends StatefulWidget {
 
 class _CustomerChooseMechanicScreenState
     extends State<CustomerChooseMechanicScreen> {
-  int _selectedIndex = 1; // Bookings tab
-
   final _primaryColor = const Color(0xFFea2a33);
-  final _backgroundColor = const Color(0xFFf7f8fa); // Corresponds to bg-gray-50
-  final _textPrimary = const Color(0xFF1a1a1a); // Corresponds to text-gray-900
   final _textSecondary = const Color(
     0xFF6b7280,
   ); // Corresponds to text-gray-500
@@ -48,20 +44,6 @@ class _CustomerChooseMechanicScreenState
     },
   ];
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    // TODO: Handle navigation to other screens based on index
-    if (index == 0) {
-      Navigator.pushReplacementNamed(context, '/customer_dashboard');
-    } else if (index == 2) {
-      Navigator.pushReplacementNamed(context, '/customer_vehicles');
-    } else if (index == 3) {
-      Navigator.pushReplacementNamed(context, '/customer_profile');
-    }
-  }
-
   Widget _buildMechanicCard(Map<String, dynamic> mechanic) {
     return GestureDetector(
       onTap: () {
@@ -74,7 +56,7 @@ class _CustomerChooseMechanicScreenState
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withAlpha((255 * 0.05).round()),
               spreadRadius: 1,
               blurRadius: 5,
               offset: const Offset(0, 2),
@@ -103,7 +85,7 @@ class _CustomerChooseMechanicScreenState
                           style: GoogleFonts.splineSans(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: _textPrimary,
+                            color: const Color(0xFF1a1a1a),
                           ),
                         ),
                         Row(
@@ -119,7 +101,7 @@ class _CustomerChooseMechanicScreenState
                               style: GoogleFonts.splineSans(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
-                                color: _textPrimary,
+                                color: const Color(0xFF1a1a1a),
                               ),
                             ),
                           ],
@@ -180,7 +162,7 @@ class _CustomerChooseMechanicScreenState
                   borderRadius: BorderRadius.circular(28),
                 ),
                 elevation: 5,
-                shadowColor: _primaryColor.withOpacity(0.4),
+                shadowColor: _primaryColor.withAlpha((255 * 0.4).round()),
               ),
               child: Text(
                 'Continue',
@@ -191,42 +173,6 @@ class _CustomerChooseMechanicScreenState
               ),
             ),
           ),
-          BottomNavigationBar(
-            items: const <BottomNavigationBarItem>[
-              BottomNavigationBarItem(
-                icon: Icon(Icons.dashboard_outlined),
-                label: 'Dashboard',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.calendar_month_outlined),
-                label: 'Bookings',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.directions_car_outlined),
-                label: 'Vehicles',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline),
-                label: 'Profile',
-              ),
-            ],
-            currentIndex: _selectedIndex,
-            selectedItemColor: _primaryColor,
-            unselectedItemColor: _textSecondary,
-            onTap: _onItemTapped,
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.white,
-            elevation: 0,
-            showUnselectedLabels: true,
-            selectedLabelStyle: GoogleFonts.splineSans(
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
-            unselectedLabelStyle: GoogleFonts.splineSans(
-              fontWeight: FontWeight.w500,
-              fontSize: 12,
-            ),
-          ),
         ],
       ),
     );
@@ -235,9 +181,9 @@ class _CustomerChooseMechanicScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: const Color(0xFFf7f8fa),
       appBar: AppBar(
-        backgroundColor: _backgroundColor,
+        backgroundColor: const Color(0xFFf7f8fa),
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
@@ -247,7 +193,7 @@ class _CustomerChooseMechanicScreenState
         title: Text(
           'Select a mechanic',
           style: GoogleFonts.splineSans(
-            color: _textPrimary,
+            color: const Color(0xFF1a1a1a),
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),

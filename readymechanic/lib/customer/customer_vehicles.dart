@@ -9,7 +9,6 @@ class CustomerVehiclesScreen extends StatefulWidget {
 }
 
 class _CustomerVehiclesScreenState extends State<CustomerVehiclesScreen> {
-  int _selectedIndex = 2; // Set to Vehicles
   final _primaryColor = const Color(0xFFea2a33);
 
   // Mock data for vehicles
@@ -17,21 +16,6 @@ class _CustomerVehiclesScreenState extends State<CustomerVehiclesScreen> {
     {'name': 'Toyota Camry', 'regNo': '123456'},
     {'name': 'Honda Civic', 'regNo': '789012'},
   ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    if (index == 0) {
-      Navigator.pushReplacementNamed(context, '/customer_dashboard');
-    } else if (index == 1) {
-      Navigator.pushReplacementNamed(context, '/customer_booking');
-    } else if (index == 2) {
-      // Already on vehicles list, no need to navigate
-    } else if (index == 3) {
-      Navigator.pushReplacementNamed(context, '/customer_profile');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,36 +54,6 @@ class _CustomerVehiclesScreenState extends State<CustomerVehiclesScreen> {
         backgroundColor: _primaryColor,
         child: const Icon(Icons.add, color: Colors.white, size: 30),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month_outlined),
-            label: 'Bookings',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.directions_car_outlined),
-            label: 'Vehicles',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: _primaryColor,
-        unselectedItemColor: Colors.grey[600],
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        elevation: 8,
-        showUnselectedLabels: true,
-        selectedLabelStyle: GoogleFonts.splineSans(fontWeight: FontWeight.w600),
-        unselectedLabelStyle: GoogleFonts.splineSans(),
-      ),
     );
   }
 
@@ -107,7 +61,7 @@ class _CustomerVehiclesScreenState extends State<CustomerVehiclesScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 16.0),
       elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.1),
+      shadowColor: Colors.black.withAlpha((255 * 0.1).round()),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),

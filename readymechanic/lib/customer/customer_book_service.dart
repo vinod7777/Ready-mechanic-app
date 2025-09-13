@@ -11,7 +11,6 @@ class CustomerBookServiceScreen extends StatefulWidget {
 }
 
 class _CustomerBookServiceScreenState extends State<CustomerBookServiceScreen> {
-  int _selectedIndex = 1; // Bookings tab
   final _primaryColor = const Color(0xFFea2a33);
 
   String? _selectedVehicle;
@@ -35,20 +34,6 @@ class _CustomerBookServiceScreenState extends State<CustomerBookServiceScreen> {
     {'name': 'Engine Diagnostics', 'price': '\$80.00', 'icon': Icons.build},
     {'name': 'General Inspection', 'price': '\$50.00', 'icon': Icons.search},
   ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    // TODO: Handle navigation to other screens based on index
-    if (index == 0) {
-      Navigator.pushReplacementNamed(context, '/customer_dashboard');
-    } else if (index == 2) {
-      Navigator.pushReplacementNamed(context, '/customer_vehicles');
-    } else if (index == 3) {
-      Navigator.pushReplacementNamed(context, '/customer_profile');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -115,7 +100,7 @@ class _CustomerBookServiceScreenState extends State<CustomerBookServiceScreen> {
                   borderRadius: BorderRadius.circular(28),
                 ),
                 elevation: 5,
-                shadowColor: _primaryColor.withOpacity(0.4),
+                shadowColor: _primaryColor.withAlpha((255 * 0.4).round()),
               ),
               child: Text(
                 'Continue',
@@ -128,36 +113,6 @@ class _CustomerBookServiceScreenState extends State<CustomerBookServiceScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month_outlined),
-            label: 'Bookings',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.directions_car_outlined),
-            label: 'Vehicles',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: _primaryColor,
-        unselectedItemColor: Colors.grey[600],
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        elevation: 8,
-        showUnselectedLabels: true,
-        selectedLabelStyle: GoogleFonts.splineSans(fontWeight: FontWeight.w600),
-        unselectedLabelStyle: GoogleFonts.splineSans(),
-      ),
     );
   }
 
@@ -168,7 +123,10 @@ class _CustomerBookServiceScreenState extends State<CustomerBookServiceScreen> {
         borderRadius: BorderRadius.circular(12.0),
         border: Border.all(color: Colors.grey[200]!),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5),
+          BoxShadow(
+            color: Colors.black.withAlpha((255 * 0.05).round()),
+            blurRadius: 5,
+          ),
         ],
       ),
       child: DropdownButtonFormField<String>(
@@ -228,14 +186,16 @@ class _CustomerBookServiceScreenState extends State<CustomerBookServiceScreen> {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: isSelected ? _primaryColor.withOpacity(0.05) : Colors.white,
+          color: isSelected
+              ? _primaryColor.withAlpha((255 * 0.05).round())
+              : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? _primaryColor : Colors.grey[200]!,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withAlpha((255 * 0.05).round()),
               spreadRadius: 1,
               blurRadius: 5,
               offset: const Offset(0, 2),

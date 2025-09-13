@@ -1,26 +1,36 @@
 {
   "project_info": {
-    "project_number": "1032238559305",
-    "project_id": "mechanic-1b1ff",
-    "storage_bucket": "mechanic-1b1ff.firebasestorage.app"
+    "project_number": "954137926104",
+    "project_id": "readymechanic-f07ca",
+    "storage_bucket": "readymechanic-f07ca.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1032238559305:android:393a201db029debcdccf98",
+        "mobilesdk_app_id": "1:954137926104:android:83fad9064170a2c347baad",
         "android_client_info": {
           "package_name": "com.example.readymechanic"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "954137926104-uunl4k67nb0nio3sdjr3ku7b64k0ujte.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyCgF24_7x1qokxJvwvGXhoJnUhtcyWN7nw"
+          "current_key": "AIzaSyA5pb6z_cWc7FDUwP3Te5bpPtp1DBI4O2g"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "954137926104-uunl4k67nb0nio3sdjr3ku7b64k0ujte.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

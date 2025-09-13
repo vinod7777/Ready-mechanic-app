@@ -10,19 +10,10 @@ class CustomerLocationScreen extends StatefulWidget {
 }
 
 class _CustomerLocationScreenState extends State<CustomerLocationScreen> {
-  int _selectedIndex = 1; // Bookings tab
-
   final _primaryColor = const Color(0xFFea2a33);
   final _backgroundColor = const Color(0xFFf7f8fa);
   final _textPrimary = const Color(0xFF1a1a1a);
   final _textSecondary = const Color(0xFF6b7280);
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    // TODO: Handle navigation
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +22,7 @@ class _CustomerLocationScreenState extends State<CustomerLocationScreen> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(100.0),
         child: AppBar(
-          backgroundColor: Colors.white.withOpacity(0.8),
+          backgroundColor: Colors.white.withAlpha((255 * 0.8).round()),
           elevation: 0,
           scrolledUnderElevation: 0,
           leading: IconButton(
@@ -212,7 +203,7 @@ class _CustomerLocationScreenState extends State<CustomerLocationScreen> {
                   borderRadius: BorderRadius.circular(26),
                 ),
                 elevation: 4,
-                shadowColor: _primaryColor.withOpacity(0.3),
+                shadowColor: _primaryColor.withAlpha((255 * 0.3).round()),
               ),
               child: Text(
                 'Continue',
@@ -221,42 +212,6 @@ class _CustomerLocationScreenState extends State<CustomerLocationScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-          ),
-          BottomNavigationBar(
-            items: const <BottomNavigationBarItem>[
-              BottomNavigationBarItem(
-                icon: Icon(Icons.dashboard_outlined),
-                label: 'Dashboard',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.event_note_outlined),
-                label: 'Bookings',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.directions_car_outlined),
-                label: 'Vehicles',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline),
-                label: 'Profile',
-              ),
-            ],
-            currentIndex: _selectedIndex,
-            selectedItemColor: _primaryColor,
-            unselectedItemColor: _textSecondary,
-            onTap: _onItemTapped,
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.white,
-            elevation: 0,
-            showUnselectedLabels: true,
-            selectedLabelStyle: GoogleFonts.splineSans(
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
-            unselectedLabelStyle: GoogleFonts.splineSans(
-              fontWeight: FontWeight.w500,
-              fontSize: 12,
             ),
           ),
         ],

@@ -5,8 +5,9 @@ import 'package:readymechanic/splash_screen.dart';
 import 'package:readymechanic/login.dart';
 import 'package:readymechanic/mechanic/mechanic_registration.dart';
 import 'package:readymechanic/customer/customer_registration.dart';
-import 'package:readymechanic/customer/customer_dashboard.dart';
-import 'package:readymechanic/mechanic/mechanic_dashboard.dart';
+import 'package:readymechanic/customer/customer_home.dart';
+
+import 'package:readymechanic/mechanic/mechanic_home.dart';
 import 'package:readymechanic/customer/customer_booking.dart';
 import 'package:readymechanic/customer/customer_booking_details.dart';
 import 'package:readymechanic/customer/customer_vehicles.dart';
@@ -39,8 +40,8 @@ class MyApp extends StatelessWidget {
             const MechanicRegistrationScreen(),
         '/customer_registration': (context) =>
             const CustomerRegistrationScreen(),
-        '/customer_dashboard': (context) => const CustomerDashboardScreen(),
-        '/mechanic_dashboard': (context) => const MechanicDashboardScreen(),
+        '/customer_dashboard': (context) => const CustomerHomeScreen(),
+        '/mechanic_dashboard': (context) => const MechanicHomeScreen(),
         '/customer_booking': (context) => const CustomerBookingsListScreen(),
         '/customer_booking_details': (context) =>
             const CustomerBookingDetailsScreen(),

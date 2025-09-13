@@ -10,7 +10,6 @@ class CustomerAddVehiclesScreen extends StatefulWidget {
 }
 
 class _CustomerAddVehiclesScreenState extends State<CustomerAddVehiclesScreen> {
-  int _selectedIndex = 2; // Vehicles tab
   final _primaryColor = const Color(0xFFea2a33);
 
   String? _selectedVehicleType;
@@ -29,20 +28,6 @@ class _CustomerAddVehiclesScreenState extends State<CustomerAddVehiclesScreen> {
 
   List<String> _currentMakes = [];
   List<String> _currentModels = [];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    // TODO: Handle navigation to other screens based on index
-    if (index == 0) {
-      Navigator.pushReplacementNamed(context, '/customer_dashboard');
-    } else if (index == 1) {
-      Navigator.pushReplacementNamed(context, '/customer_booking');
-    } else if (index == 3) {
-      // Navigator.pushReplacementNamed(context, '/customer_profile');
-    }
-  }
 
   void _onVehicleTypeChanged(String? newValue) {
     setState(() {
@@ -172,36 +157,6 @@ class _CustomerAddVehiclesScreenState extends State<CustomerAddVehiclesScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month_outlined),
-            label: 'Bookings',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.directions_car_outlined),
-            label: 'Vehicles',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: _primaryColor,
-        unselectedItemColor: Colors.grey[600],
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        elevation: 8,
-        showUnselectedLabels: true,
-        selectedLabelStyle: GoogleFonts.splineSans(fontWeight: FontWeight.w600),
-        unselectedLabelStyle: GoogleFonts.splineSans(),
-      ),
     );
   }
 
@@ -231,7 +186,10 @@ class _CustomerAddVehiclesScreenState extends State<CustomerAddVehiclesScreen> {
             borderRadius: BorderRadius.circular(8.0),
             border: Border.all(color: Colors.grey[300]!),
             boxShadow: [
-              BoxShadow(color: Colors.black.withAlpha((255 * 0.05).round()), blurRadius: 5),
+              BoxShadow(
+                color: Colors.black.withAlpha((255 * 0.05).round()),
+                blurRadius: 5,
+              ),
             ],
           ),
           child: DropdownButtonFormField<String>(
@@ -261,10 +219,7 @@ class _CustomerAddVehiclesScreenState extends State<CustomerAddVehiclesScreen> {
     );
   }
 
-  Widget _buildTextField({
-    required String label,
-    required String hint,
-  }) {
+  Widget _buildTextField({required String label, required String hint}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -283,7 +238,10 @@ class _CustomerAddVehiclesScreenState extends State<CustomerAddVehiclesScreen> {
             borderRadius: BorderRadius.circular(8.0),
             border: Border.all(color: Colors.grey[300]!),
             boxShadow: [
-              BoxShadow(color: Colors.black.withAlpha((255 * 0.05).round()), blurRadius: 5),
+              BoxShadow(
+                color: Colors.black.withAlpha((255 * 0.05).round()),
+                blurRadius: 5,
+              ),
             ],
           ),
           child: TextField(

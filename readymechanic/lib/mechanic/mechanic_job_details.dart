@@ -67,7 +67,7 @@ class MechanicJobDetailsScreen extends StatelessWidget {
   Widget _buildCustomerDetailsCard() {
     return Card(
       elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.05),
+      shadowColor: Colors.black.withAlpha((255 * 0.05).round()),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -117,7 +117,7 @@ class MechanicJobDetailsScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           CircleAvatar(
             radius: 20,
@@ -152,7 +152,7 @@ class MechanicJobDetailsScreen extends StatelessWidget {
   Widget _buildPaymentStatusCard() {
     return Card(
       elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.05),
+      shadowColor: Colors.black.withAlpha((255 * 0.05).round()),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
@@ -228,7 +228,7 @@ class MechanicJobDetailsScreen extends StatelessWidget {
             icon: const Icon(Icons.play_arrow),
             label: const Text('Start Service'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _primaryColor.withOpacity(0.1),
+              backgroundColor: _primaryColor.withAlpha((255 * 0.1).round()),
               foregroundColor: _primaryColor,
               minimumSize: const Size(double.infinity, 48),
               shape: RoundedRectangleBorder(

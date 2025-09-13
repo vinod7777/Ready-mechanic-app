@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-enum BookingStatus { Pending, Accepted, InProgress, Completed }
+enum BookingStatus { pending, accepted, inProgress, completed }
 
 class CustomerBookingsListScreen extends StatefulWidget {
   const CustomerBookingsListScreen({super.key});
 
   @override
-  State<CustomerBookingsListScreen> createState() => _CustomerBookingsListScreenState();
+  State<CustomerBookingsListScreen> createState() =>
+      _CustomerBookingsListScreenState();
 }
 
-class _CustomerBookingsListScreenState extends State<CustomerBookingsListScreen> {
-  int _selectedIndex = 1;
-  final _primaryColor = const Color(0xFFea2a33);
+class _CustomerBookingsListScreenState
+    extends State<CustomerBookingsListScreen> {
   String _selectedFilter = 'All';
 
   // Mock data
@@ -22,51 +22,42 @@ class _CustomerBookingsListScreenState extends State<CustomerBookingsListScreen>
       'service': 'Oil Change',
       'vehicle': 'Honda Civic',
       'date': '2023-10-27',
-      'status': BookingStatus.Pending,
+      'status': BookingStatus.pending,
     },
     {
       'mechanic': 'Ben',
       'service': 'Brake Repair',
       'vehicle': 'Toyota Camry',
       'date': '2023-10-26',
-      'status': BookingStatus.Accepted,
+      'status': BookingStatus.accepted,
     },
     {
       'mechanic': 'Chris',
       'service': 'Tire Rotation',
       'vehicle': 'Ford Focus',
       'date': '2023-10-25',
-      'status': BookingStatus.InProgress,
+      'status': BookingStatus.inProgress,
     },
     {
       'mechanic': 'David',
       'service': 'Engine Tune-Up',
       'vehicle': 'Chevrolet Malibu',
       'date': '2023-10-24',
-      'status': BookingStatus.Completed,
+      'status': BookingStatus.completed,
     },
   ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-      if (index == 0) {
-        Navigator.pushReplacementNamed(context, '/customer_dashboard');
-      } else if (index == 2) {
-        Navigator.pushReplacementNamed(context, '/customer_vehicles');
-      } else if (index == 3) {
-        Navigator.pushReplacementNamed(context, '/customer_profile');
-      } else if (index == 1) {
-        // Already on bookings list, no need to navigate
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     final filteredBookings = _selectedFilter == 'All'
         ? bookings
-        : bookings.where((b) => b['status'].toString().split('.').last == _selectedFilter).toList();
+        : bookings
+              .where(
+                (b) =>
+                    b['status'].toString().split('.').last.toLowerCase() ==
+                    _selectedFilter.toLowerCase(),
+              )
+              .toList();
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -79,7 +70,13 @@ class _CustomerBookingsListScreenState extends State<CustomerBookingsListScreen>
             icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
             onPressed: () => Navigator.of(context).pop(),
           ),
-          title: Text('Bookings', style: GoogleFonts.splineSans(color: Colors.grey[800], fontWeight: FontWeight.bold)),
+          title: Text(
+            'Bookings',
+            style: GoogleFonts.splineSans(
+              color: Colors.grey[800],
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           centerTitle: true,
           flexibleSpace: Align(
             alignment: Alignment.bottomCenter,
@@ -98,21 +95,6 @@ class _CustomerBookingsListScreenState extends State<CustomerBookingsListScreen>
           return _buildBookingCard(booking);
         },
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), label: 'Dashboard'),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_month_outlined), label: 'Bookings'),
-          BottomNavigationBarItem(icon: Icon(Icons.directions_car_outlined), label: 'Vehicles'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: _primaryColor,
-        unselectedItemColor: Colors.grey[600],
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        elevation: 8,
-      ),
     );
   }
 
@@ -122,7 +104,7 @@ class _CustomerBookingsListScreenState extends State<CustomerBookingsListScreen>
       decoration: BoxDecoration(
         color: Colors.grey[100],
         borderRadius: BorderRadius.circular(8.0),
-        border: Border.all(color: Colors.grey[300]!)
+        border: Border.all(color: Colors.grey[300]!),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
@@ -134,13 +116,25 @@ class _CustomerBookingsListScreenState extends State<CustomerBookingsListScreen>
               _selectedFilter = newValue!;
             });
           },
-          items: <String>['All', 'Pending', 'Accepted', 'InProgress', 'Completed']
-              .map<DropdownMenuItem<String>>((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(value, style: GoogleFonts.splineSans(color: Colors.grey[700], fontWeight: FontWeight.w500)),
-            );
-          }).toList(),
+          items:
+              <String>[
+                'All',
+                'pending',
+                'accepted',
+                'inProgress',
+                'completed',
+              ].map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(
+                    value,
+                    style: GoogleFonts.splineSans(
+                      color: Colors.grey[700],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                );
+              }).toList(),
         ),
       ),
     );
@@ -150,7 +144,7 @@ class _CustomerBookingsListScreenState extends State<CustomerBookingsListScreen>
     return Card(
       margin: const EdgeInsets.only(bottom: 16.0),
       elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.1),
+      shadowColor: Colors.black.withAlpha((255 * 0.1).round()),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
       child: InkWell(
         onTap: () {
@@ -166,13 +160,38 @@ class _CustomerBookingsListScreenState extends State<CustomerBookingsListScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Mechanic: ${booking["mechanic"]}', style: GoogleFonts.splineSans(color: Colors.grey[600], fontSize: 12)),
+                    Text(
+                      'Mechanic: ${booking["mechanic"]}',
+                      style: GoogleFonts.splineSans(
+                        color: Colors.grey[600],
+                        fontSize: 12,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text(booking['service'], style: GoogleFonts.splineSans(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87)),
+                    Text(
+                      booking['service'],
+                      style: GoogleFonts.splineSans(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Colors.black87,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text('Vehicle: ${booking["vehicle"]}', style: GoogleFonts.splineSans(color: Colors.grey[600], fontSize: 14)),
+                    Text(
+                      'Vehicle: ${booking["vehicle"]}',
+                      style: GoogleFonts.splineSans(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                      ),
+                    ),
                     const SizedBox(height: 8),
-                    Text('Date: ${booking["date"]}', style: GoogleFonts.splineSans(color: Colors.grey[600], fontSize: 12)),
+                    Text(
+                      'Date: ${booking["date"]}',
+                      style: GoogleFonts.splineSans(
+                        color: Colors.grey[600],
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -197,22 +216,22 @@ class _CustomerBookingsListScreenState extends State<CustomerBookingsListScreen>
     Color textColor;
 
     switch (status) {
-      case BookingStatus.Pending:
+      case BookingStatus.pending:
         color = Colors.yellow[100]!;
         text = 'Pending';
         textColor = Colors.yellow[800]!;
         break;
-      case BookingStatus.Accepted:
+      case BookingStatus.accepted:
         color = Colors.blue[100]!;
         text = 'Accepted';
         textColor = Colors.blue[800]!;
         break;
-      case BookingStatus.InProgress:
+      case BookingStatus.inProgress:
         color = Colors.indigo[100]!;
         text = 'In-Progress';
         textColor = Colors.indigo[800]!;
         break;
-      case BookingStatus.Completed:
+      case BookingStatus.completed:
         color = Colors.green[100]!;
         text = 'Completed';
         textColor = Colors.green[800]!;
@@ -227,7 +246,11 @@ class _CustomerBookingsListScreenState extends State<CustomerBookingsListScreen>
       ),
       child: Text(
         text,
-        style: GoogleFonts.splineSans(color: textColor, fontWeight: FontWeight.w500, fontSize: 12),
+        style: GoogleFonts.splineSans(
+          color: textColor,
+          fontWeight: FontWeight.w500,
+          fontSize: 12,
+        ),
       ),
     );
   }

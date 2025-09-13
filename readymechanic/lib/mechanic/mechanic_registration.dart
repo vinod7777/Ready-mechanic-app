@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -12,10 +14,53 @@ class MechanicRegistrationScreen extends StatefulWidget {
 
 class _MechanicRegistrationScreenState
     extends State<MechanicRegistrationScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _auth = FirebaseAuth.instance;
+  final _firestore = FirebaseFirestore.instance;
+
+  // Text Editing Controllers
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _experienceController = TextEditingController();
+  final _skillsController = TextEditingController();
+  final _licenseController = TextEditingController();
+  final _aadharController = TextEditingController();
+  final _accountNameController = TextEditingController();
+  final _accountNumberController = TextEditingController();
+  final _ifscController = TextEditingController();
+
   String? _selectedVehicleType;
   final _vehicleTypes = ['Sedan', 'SUV', 'Truck', 'Motorcycle'];
 
   final _primaryColor = const Color(0xFFea2a33);
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _addressController.dispose();
+    _experienceController.dispose();
+    _skillsController.dispose();
+    _licenseController.dispose();
+    _aadharController.dispose();
+    _accountNameController.dispose();
+    _accountNumberController.dispose();
+    _ifscController.dispose();
+    super.dispose();
+  }
+
+  String? _validateNonEmpty(String? value, String fieldName) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Please enter your $fieldName';
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,49 +85,128 @@ class _MechanicRegistrationScreenState
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionTitle('Personal Info'),
-            _buildTextField(placeholder: 'Full Name'),
-            _buildTextField(
-              placeholder: 'Phone Number',
-              keyboardType: TextInputType.phone,
-            ),
-            _buildTextField(
-              placeholder: 'Email Address',
-              keyboardType: TextInputType.emailAddress,
-            ),
-            _buildTextField(placeholder: 'Address'),
-            const SizedBox(height: 24),
-            _buildSectionTitle('Professional Info'),
-            _buildTextField(
-              placeholder: 'Years of Experience',
-              keyboardType: TextInputType.number,
-            ),
-            _buildDropdown(),
-            _buildTextArea(
-              placeholder:
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionTitle('Personal Info'),
+              TextFormField(
+                controller: _nameController,
+                decoration: _inputDecoration('Full Name'),
+                validator: (v) => _validateNonEmpty(v, 'full name'),
+                style: GoogleFonts.splineSans(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _phoneController,
+                decoration: _inputDecoration('Phone Number'),
+                keyboardType: TextInputType.phone,
+                validator: (v) => _validateNonEmpty(v, 'phone number'),
+                style: GoogleFonts.splineSans(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _emailController,
+                decoration: _inputDecoration('Email Address'),
+                keyboardType: TextInputType.emailAddress,
+                validator: (v) {
+                  if (v == null || !v.contains('@')) {
+                    return 'Please enter a valid email';
+                  }
+                  return null;
+                },
+                style: GoogleFonts.splineSans(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _passwordController,
+                decoration: _inputDecoration('Password'),
+                obscureText: true,
+                validator: (v) {
+                  if (v == null || v.length < 6) {
+                    return 'Password must be at least 6 characters';
+                  }
+                  return null;
+                },
+                style: GoogleFonts.splineSans(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _addressController,
+                decoration: _inputDecoration('Address'),
+                validator: (v) => _validateNonEmpty(v, 'address'),
+                style: GoogleFonts.splineSans(fontSize: 16),
+              ),
+              const SizedBox(height: 24),
+              _buildSectionTitle('Professional Info'),
+              TextFormField(
+                controller: _experienceController,
+                decoration: _inputDecoration('Years of Experience'),
+                keyboardType: TextInputType.number,
+                validator: (v) => _validateNonEmpty(v, 'experience'),
+                style: GoogleFonts.splineSans(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              _buildDropdown(),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _skillsController,
+                decoration: _inputDecoration(
                   'Skills/Specializations (e.g., Engine repair, Brakes, ...)',
-            ),
-            const SizedBox(height: 24),
-            _buildSectionTitle('Verification'),
-            _buildTextField(placeholder: 'Driving License No.'),
-            _buildTextField(placeholder: 'Aadhar No.'),
-            const SizedBox(height: 24),
-            _buildSectionTitle('Bank Details'),
-            _buildTextField(placeholder: 'Account Holder Name'),
-            _buildTextField(placeholder: 'Account Number'),
-            _buildTextField(placeholder: 'IFSC Code'),
-            const SizedBox(height: 24),
-            _buildTermsAndPolicyText(),
-            const SizedBox(height: 80), // Space for the floating button
-          ],
+                ),
+                maxLines: 4,
+                style: GoogleFonts.splineSans(fontSize: 16),
+              ),
+              const SizedBox(height: 24),
+              _buildSectionTitle('Verification'),
+              TextFormField(
+                controller: _licenseController,
+                decoration: _inputDecoration('Driving License No.'),
+                validator: (v) => _validateNonEmpty(v, 'license number'),
+                style: GoogleFonts.splineSans(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _aadharController,
+                decoration: _inputDecoration('Aadhar No.'),
+                validator: (v) => _validateNonEmpty(v, 'Aadhar number'),
+                style: GoogleFonts.splineSans(fontSize: 16),
+              ),
+              const SizedBox(height: 24),
+              _buildSectionTitle('Bank Details'),
+              TextFormField(
+                controller: _accountNameController,
+                decoration: _inputDecoration('Account Holder Name'),
+                validator: (v) => _validateNonEmpty(v, 'account holder name'),
+                style: GoogleFonts.splineSans(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _accountNumberController,
+                decoration: _inputDecoration('Account Number'),
+                validator: (v) => _validateNonEmpty(v, 'account number'),
+                style: GoogleFonts.splineSans(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _ifscController,
+                decoration: _inputDecoration('IFSC Code'),
+                validator: (v) => _validateNonEmpty(v, 'IFSC code'),
+                style: GoogleFonts.splineSans(fontSize: 16),
+              ),
+              const SizedBox(height: 24),
+              _buildTermsAndPolicyText(),
+              const SizedBox(height: 80), // Space for the floating button
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: _buildBottomAppBar(),
     );
   }
+
+  // ... (keep _buildSectionTitle)
 
   Widget _buildSectionTitle(String title) {
     return Padding(
@@ -94,20 +218,6 @@ class _MechanicRegistrationScreenState
           fontWeight: FontWeight.bold,
           color: Colors.grey[900],
         ),
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required String placeholder,
-    TextInputType? keyboardType,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: TextField(
-        keyboardType: keyboardType,
-        style: GoogleFonts.splineSans(fontSize: 16),
-        decoration: _inputDecoration(placeholder),
       ),
     );
   }
@@ -137,17 +247,6 @@ class _MechanicRegistrationScreenState
         items: _vehicleTypes.map<DropdownMenuItem<String>>((String value) {
           return DropdownMenuItem<String>(value: value, child: Text(value));
         }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildTextArea({required String placeholder}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: TextField(
-        maxLines: 4,
-        style: GoogleFonts.splineSans(fontSize: 16),
-        decoration: _inputDecoration(placeholder),
       ),
     );
   }
@@ -185,18 +284,26 @@ class _MechanicRegistrationScreenState
             const TextSpan(text: 'By registering, you agree to our '),
             TextSpan(
               text: 'Terms of Service',
-              style: TextStyle(color: _primaryColor, fontWeight: FontWeight.w600),
-              recognizer: TapGestureRecognizer()..onTap = () {
-                // Handle Terms of Service tap
-              },
+              style: TextStyle(
+                color: _primaryColor,
+                fontWeight: FontWeight.w600,
+              ),
+              recognizer: TapGestureRecognizer()
+                ..onTap = () {
+                  // Handle Terms of Service tap
+                },
             ),
             const TextSpan(text: ' and '),
             TextSpan(
               text: 'Privacy Policy',
-              style: TextStyle(color: _primaryColor, fontWeight: FontWeight.w600),
-              recognizer: TapGestureRecognizer()..onTap = () {
-                // Handle Privacy Policy tap
-              },
+              style: TextStyle(
+                color: _primaryColor,
+                fontWeight: FontWeight.w600,
+              ),
+              recognizer: TapGestureRecognizer()
+                ..onTap = () {
+                  // Handle Privacy Policy tap
+                },
             ),
             const TextSpan(text: '.'),
           ],
@@ -212,9 +319,7 @@ class _MechanicRegistrationScreenState
       child: Padding(
         padding: const EdgeInsets.all(5.0),
         child: ElevatedButton(
-          onPressed: () {
-            Navigator.of(context).pushNamedAndRemoveUntil('/login', (Route<dynamic> route) => false);
-          },
+          onPressed: _isLoading ? null : _registerMechanic,
           style: ElevatedButton.styleFrom(
             backgroundColor: _primaryColor,
             minimumSize: const Size(double.infinity, 48),
@@ -222,16 +327,84 @@ class _MechanicRegistrationScreenState
               borderRadius: BorderRadius.circular(24),
             ),
           ),
-          child: Text(
-            'Register as Mechanic',
-            style: GoogleFonts.splineSans(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
+          child: _isLoading
+              ? const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                )
+              : Text(
+                  'Register as Mechanic',
+                  style: GoogleFonts.splineSans(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
         ),
       ),
     );
+  }
+
+  Future<void> _registerMechanic() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // 1. Create user in Firebase Auth
+      final userCredential = await _auth.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      // 2. Save mechanic details to Firestore
+      if (userCredential.user != null) {
+        await _firestore
+            .collection('mechanics')
+            .doc(userCredential.user!.uid)
+            .set({
+              'name': _nameController.text.trim(),
+              'email': _emailController.text.trim(),
+              'phone': _phoneController.text.trim(),
+              'address': _addressController.text.trim(),
+              'experience': _experienceController.text.trim(),
+              'skills': _skillsController.text.trim(),
+              'vehicleTypeServiced': _selectedVehicleType,
+              'licenseNumber': _licenseController.text.trim(),
+              'aadharNumber': _aadharController.text.trim(),
+              'bankAccountName': _accountNameController.text.trim(),
+              'bankAccountNumber': _accountNumberController.text.trim(),
+              'ifscCode': _ifscController.text.trim(),
+              'role': 'mechanic',
+              'createdAt': FieldValue.serverTimestamp(),
+            });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Registration successful! Please log in.'),
+            ),
+          );
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/login', (route) => false);
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'An error occurred.')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 }

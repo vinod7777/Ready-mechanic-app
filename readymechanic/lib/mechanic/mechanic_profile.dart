@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:readymechanic/mechanic/mechanic_dashboard.dart';
-import 'package:readymechanic/mechanic/mechanic_job.dart';
-import 'package:readymechanic/mechanic/mechanic_request.dart';
 
 class MechanicProfileScreen extends StatefulWidget {
   const MechanicProfileScreen({super.key});
@@ -12,44 +9,11 @@ class MechanicProfileScreen extends StatefulWidget {
 }
 
 class _MechanicProfileScreenState extends State<MechanicProfileScreen> {
-  int _selectedIndex = 3; // Profile tab
-
   // Colors from other mechanic screens
   final Color _primaryColor = const Color(0xFFea2a33);
   final Color _backgroundColor = Colors.grey[50]!;
   final Color _textPrimary = Colors.grey[800]!;
   final Color _textSecondary = Colors.grey[600]!;
-
-  void _onItemTapped(int index) {
-    if (index == _selectedIndex) return;
-
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    Widget page;
-    switch (index) {
-      case 0:
-        page = const MechanicDashboardScreen();
-        break;
-      case 1:
-        page = const MechanicRequestScreen();
-        break;
-      case 2:
-        page = const MechanicJobScreen();
-        break;
-      default:
-        return;
-    }
-
-    Navigator.pushReplacement(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation1, animation2) => page,
-        transitionDuration: Duration.zero,
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +88,7 @@ class _MechanicProfileScreenState extends State<MechanicProfileScreen> {
                   );
                 },
                 style: TextButton.styleFrom(
-                  backgroundColor: _primaryColor.withOpacity(0.1),
+                  backgroundColor: _primaryColor.withAlpha((255 * 0.1).round()),
                   minimumSize: const Size(double.infinity, 50),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -144,7 +108,6 @@ class _MechanicProfileScreenState extends State<MechanicProfileScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
@@ -185,46 +148,6 @@ class _MechanicProfileScreenState extends State<MechanicProfileScreen> {
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(color: Colors.grey[300]!),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: Colors.grey[200]!, width: 1)),
-        color: Colors.white,
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.list_alt),
-            label: 'Requests',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.work), label: 'Jobs'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: _primaryColor,
-        unselectedItemColor: _textSecondary,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        showUnselectedLabels: true,
-        selectedLabelStyle: GoogleFonts.spaceGrotesk(
-          fontWeight: FontWeight.w500,
-          fontSize: 12,
-        ),
-        unselectedLabelStyle: GoogleFonts.spaceGrotesk(
-          fontWeight: FontWeight.w500,
-          fontSize: 12,
         ),
       ),
     );

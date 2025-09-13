@@ -101,7 +101,7 @@ class _CustomerRegistrationScreenState
                   borderRadius: BorderRadius.circular(26),
                 ),
                 elevation: 5,
-                shadowColor: _blue600.withOpacity(0.4),
+                shadowColor: _blue600.withAlpha((255 * 0.4).round()),
               ),
               child: Text(
                 'Register',

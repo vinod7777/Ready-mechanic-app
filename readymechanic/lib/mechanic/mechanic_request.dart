@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:readymechanic/mechanic/mechanic_job.dart';
 import 'package:readymechanic/mechanic/mechanic_dashboard.dart';
-import 'package:readymechanic/mechanic/mechanic_profile.dart';
 
 class MechanicRequestScreen extends StatefulWidget {
   const MechanicRequestScreen({super.key});
@@ -12,10 +10,7 @@ class MechanicRequestScreen extends StatefulWidget {
 }
 
 class _MechanicRequestScreenState extends State<MechanicRequestScreen> {
-  int _selectedIndex = 1; // Requests tab
-
   // Colors from mechanic_dashboard.dart
-  final Color _primaryColor = const Color(0xFFea2a33);
   final Color _backgroundColor = Colors.grey[50]!;
   final Color _textPrimary = Colors.grey[800]!;
   final Color _textSecondary = Colors.grey[600]!;
@@ -59,39 +54,6 @@ class _MechanicRequestScreenState extends State<MechanicRequestScreen> {
     },
   ];
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    // TODO: Handle navigation to other screens based on index
-    if (index == 0) {
-      // Tapped on Dashboard
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation1, animation2) =>
-              const MechanicDashboardScreen(),
-        ),
-      );
-    } else if (index == 2) {
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation1, animation2) =>
-              const MechanicJobScreen(),
-        ),
-      );
-    } else if (index == 3) {
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation1, animation2) =>
-              const MechanicProfileScreen(),
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -134,10 +96,9 @@ class _MechanicRequestScreenState extends State<MechanicRequestScreen> {
                 return _buildRequestCard(request);
               },
             ),
-          ],
+          ], // This was missing a closing parenthesis
         ),
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
@@ -150,7 +111,7 @@ class _MechanicRequestScreenState extends State<MechanicRequestScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withAlpha((255 * 0.1).round()),
             spreadRadius: 1,
             blurRadius: 10,
             offset: const Offset(0, 4),
@@ -267,46 +228,6 @@ class _MechanicRequestScreenState extends State<MechanicRequestScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: Colors.grey[200]!, width: 1)),
-        color: Colors.white,
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: BottomNavigationBar(
-        items: <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.list_alt),
-            label: 'Requests',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.work), label: 'Jobs'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: _primaryColor,
-        unselectedItemColor: _textSecondary,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        showUnselectedLabels: true,
-        selectedLabelStyle: GoogleFonts.spaceGrotesk(
-          fontWeight: FontWeight.w500,
-          fontSize: 12,
-        ),
-        unselectedLabelStyle: GoogleFonts.spaceGrotesk(
-          fontWeight: FontWeight.w500,
-          fontSize: 12,
-        ),
       ),
     );
   }

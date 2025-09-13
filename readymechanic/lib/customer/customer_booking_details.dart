@@ -11,15 +11,7 @@ class CustomerBookingDetailsScreen extends StatefulWidget {
 
 class _CustomerBookingDetailsScreenState
     extends State<CustomerBookingDetailsScreen> {
-  int _selectedIndex = 1; // Set to Bookings
   final _primaryColor = const Color(0xFFea2a33);
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-      // TODO: Handle navigation to other screens
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,36 +46,6 @@ class _CustomerBookingDetailsScreenState
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month_outlined),
-            label: 'Bookings',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.directions_car_outlined),
-            label: 'Vehicles',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: _primaryColor,
-        unselectedItemColor: Colors.grey[600],
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        elevation: 8,
-        showUnselectedLabels: true,
-        selectedLabelStyle: GoogleFonts.splineSans(fontWeight: FontWeight.w600),
-        unselectedLabelStyle: GoogleFonts.splineSans(),
-      ),
     );
   }
 
@@ -94,7 +56,10 @@ class _CustomerBookingDetailsScreenState
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10),
+          BoxShadow(
+            color: Colors.grey.withAlpha((255 * 0.1).round()),
+            blurRadius: 10,
+          ),
         ],
       ),
       child: Column(
@@ -159,7 +124,10 @@ class _CustomerBookingDetailsScreenState
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10),
+          BoxShadow(
+            color: Colors.grey.withAlpha((255 * 0.1).round()),
+            blurRadius: 10,
+          ),
         ],
       ),
       child: Column(
@@ -205,7 +173,10 @@ class _CustomerBookingDetailsScreenState
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10),
+          BoxShadow(
+            color: Colors.grey.withAlpha((255 * 0.1).round()),
+            blurRadius: 10,
+          ),
         ],
       ),
       child: Column(
@@ -269,7 +240,8 @@ class _CustomerBookingDetailsScreenState
       children: [
         CircleAvatar(
           radius: 24,
-          backgroundColor: iconBgColor ?? _primaryColor.withOpacity(0.1),
+          backgroundColor:
+              iconBgColor ?? _primaryColor.withAlpha((255 * 0.1).round()),
           child: Icon(icon, color: iconColor ?? _primaryColor, size: 28),
         ),
         const SizedBox(width: 16),
