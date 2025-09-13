@@ -73,7 +73,7 @@ class _MechanicProfileScreenState extends State<MechanicProfileScreen> {
         padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
-            const CircleAvatar(
+            CircleAvatar(
               radius: 60,
               backgroundImage: NetworkImage(
                 'https://lh3.googleusercontent.com/aida-public/AB6AXuCsg4zDkeUElHy-SojE5jk3Rdk_q29Qb7EtDNi0aMTZUVsSbOlU25XEH1pwO0RKpCRxpOt_QUe4RFF-C7OGddrImww6LIVTx1UYXQ3p378XI3N1QmUvC84VLINaQGfW7Ahptl8aMWoNFd64zbAw8zfCH48_7jFWvc3HifPOe_Py2g7N0LcgRsEqkJDGfAr_NX4iCctGEt9qwU0QurC3IJ4TrSbXTmtF7Eb1l3at4SAK7nFkk_WAZ82TMkP235eDCy3s9eBelAHxfjg',
@@ -113,18 +113,23 @@ class _MechanicProfileScreenState extends State<MechanicProfileScreen> {
             ),
             _buildTextField(label: 'Routing Number', value: '*********'),
             const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: TextButton(
                 onPressed: () {
-                  // TODO: Handle Logout
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/login',
+                    (Route<dynamic> route) => false,
+                  );
                 },
                 style: TextButton.styleFrom(
                   backgroundColor: _primaryColor.withOpacity(0.1),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  minimumSize: const Size(double.infinity, 50),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 child: Text(
                   'Logout',
