@@ -23,20 +23,38 @@ class _CustomerBookServiceScreenState extends State<CustomerBookServiceScreen> {
   ];
 
   final List<Map<String, dynamic>> _services = [
-    {'name': 'Oil Change', 'price': '\$45.00', 'icon': Icons.oil_barrel},
-    {'name': 'Brake Service', 'price': '\$120.00', 'icon': Icons.no_crash},
+    {
+      'name': 'General Service & Oil Change',
+      'icon': Icons.oil_barrel,
+      'price': 1299,
+    },
     {
       'name': 'Battery Replacement',
-      'price': '\$150.00',
       'icon': Icons.battery_charging_full,
+      'price': 499,
     },
-    {'name': 'Tire Rotation', 'price': '\$30.00', 'icon': Icons.tire_repair},
-    {'name': 'Engine Diagnostics', 'price': '\$80.00', 'icon': Icons.build},
-    {'name': 'General Inspection', 'price': '\$50.00', 'icon': Icons.search},
+    {'name': 'Brake Repair & Service', 'icon': Icons.no_crash, 'price': 899},
+    {
+      'name': 'Flat Tire & Puncture Repair',
+      'icon': Icons.tire_repair,
+      'price': 299,
+    },
+    {'name': 'Engine Diagnostics', 'icon': Icons.build, 'price': 799},
+    {'name': 'Starting Problems', 'icon': Icons.car_repair, 'price': 599},
   ];
 
   @override
   Widget build(BuildContext context) {
+    final selectedServiceData = _selectedService == null
+        ? null
+        : _services.firstWhere(
+            (service) => service['name'] == _selectedService,
+            orElse: () => <String, dynamic>{}, // This is correct
+          );
+
+    final isContinueButtonEnabled =
+        _selectedVehicle != null && _selectedService != null;
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -84,14 +102,25 @@ class _CustomerBookServiceScreenState extends State<CustomerBookServiceScreen> {
             _buildServiceGrid(),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CustomerLocationScreen(),
-                  ),
-                );
-              },
+              onPressed: isContinueButtonEnabled
+                  ? () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CustomerLocationScreen(
+                            // This is the area with the error
+                            vehicle: _selectedVehicle!, // This line is correct
+                            serviceName:
+                                selectedServiceData?['name'] ??
+                                '', // This line is correct
+                            servicePrice:
+                                selectedServiceData?['price'] ??
+                                0, // This line is correct
+                          ), // This is the area with the error
+                        ),
+                      );
+                    }
+                  : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryColor,
                 foregroundColor: Colors.white,
@@ -101,6 +130,7 @@ class _CustomerBookServiceScreenState extends State<CustomerBookServiceScreen> {
                 ),
                 elevation: 5,
                 shadowColor: _primaryColor.withAlpha((255 * 0.4).round()),
+                disabledBackgroundColor: Colors.grey[300],
               ),
               child: Text(
                 'Continue',
@@ -169,7 +199,7 @@ class _CustomerBookServiceScreenState extends State<CustomerBookServiceScreen> {
         final service = _services[index];
         return _buildServiceCard(
           service['name']!,
-          service['price']!,
+          '₹${service['price']}',
           service['icon']!,
         );
       },

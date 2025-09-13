@@ -3,7 +3,22 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:readymechanic/customer/customer_confirmation.dart';
 
 class CustomerChooseMechanicScreen extends StatefulWidget {
-  const CustomerChooseMechanicScreen({super.key});
+  final String vehicle;
+  final String serviceName;
+  final int servicePrice;
+  final String address;
+  final String city;
+  final String issueDescription;
+
+  const CustomerChooseMechanicScreen({
+    super.key,
+    required this.vehicle,
+    required this.serviceName,
+    required this.servicePrice,
+    required this.address,
+    required this.city,
+    required this.issueDescription,
+  });
 
   @override
   State<CustomerChooseMechanicScreen> createState() =>
@@ -17,6 +32,8 @@ class _CustomerChooseMechanicScreenState
     0xFF6b7280,
   ); // Corresponds to text-gray-500
 
+  String? _selectedMechanicId;
+
   final List<Map<String, dynamic>> _mechanics = [
     {
       'name': 'Ethan Carter',
@@ -25,6 +42,7 @@ class _CustomerChooseMechanicScreenState
       'specializations': 'Engine repair, brake service, electrical systems',
       'image':
           'https://lh3.googleusercontent.com/aida-public/AB6AXuC-1C7d1XXJLAMHksF2blT4QUdw585HQDzxMO1iYX5SOi2H0ljU2e4xh3DtBvTwKZQtXXS7rjoD-UgTG1DhXKzuycpzWwK-Mfs0vbtvFUiH4g9_yBuFBFXFQIYF1vnJV6VFfFreqxYxOzPTc_izk9-RvrkQUUH3bb5qo-0C2iwXl-UiIyuw7bxy0XfHA3nYzIFT9wW1pTEt9LzyT65OFIO86ZaSoTUYcoERyQK3Sqz1V8_hHhfQ3qzajam9muuJwTAO68wtAnkWhkM',
+      'id': 'mechanic_1',
     },
     {
       'name': 'Olivia Bennett',
@@ -33,6 +51,7 @@ class _CustomerChooseMechanicScreenState
       'specializations': 'Tire changes, oil changes, routine maintenance',
       'image':
           'https://lh3.googleusercontent.com/aida-public/AB6AXuAQZyTUZj_5aHq5eM_D8Bhr0K_zifZdcgKcJWv4h0ZwhLACgKGRAxkfXcSY3xGBh41Yzz9vSW3Bh8UOAuP6GLiPPcGWurO44B4pLIjz4-VZkA6K-w0lbtrRz4pvXn6-2y3rv2CXD0tTvz02LpVmvQKTJ34xkWtB1sETd9w0ZL_KGcpe99WcMuxijat_6r-hbBwhnTyARuXMVvr3C2CXD0tTvz02LpVmvQKTJ34xkWtB1sETd9w0ZL_KGcpe99WcMuxijat_6r-hbBwhnTyARuXMVvr3C4xBEqmUmnRiitD7kofmD4SXN_h0KOJnPfUx2zoGugkbKQpTY4szauO8Q_gvCaM',
+      'id': 'mechanic_2',
     },
     {
       'name': 'Noah Thompson',
@@ -41,19 +60,28 @@ class _CustomerChooseMechanicScreenState
       'specializations': 'Transmission repair, diagnostics, suspension',
       'image':
           'https://lh3.googleusercontent.com/aida-public/AB6AXuCXHm9DDZHrl5jqSN9nPuLy3sqU48BjDHUKl8UQZ8WhBb3ULW7RnCukmlBZuxKM9htqa10-cDTJCOlAtVNs9p_RhnKw8mkdjfOUFhsINf-rQ3EbYOZ-cBOI3kCxByFkIrWRb2n-_V5U7IeTKEvb03mpaFZPqPwR5aQkOSRK6vZxqRarjFpEQFxXhaRQOTCF39yVgBuxPW8hf2hmIktKZ-VIsjBgW0ED8BDU_lPi3OXbPautlZ9M4-Qkhe2CwMdengFsJJoLN3378Go',
+      'id': 'mechanic_3',
     },
   ];
 
   Widget _buildMechanicCard(Map<String, dynamic> mechanic) {
+    final isSelected = _selectedMechanicId == mechanic['id'];
     return GestureDetector(
       onTap: () {
-        // TODO: Handle mechanic selection
+        setState(() {
+          _selectedMechanicId = isSelected ? null : mechanic['id'];
+        });
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isSelected
+              ? _primaryColor.withAlpha((255 * 0.05).round())
+              : Colors.white,
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? _primaryColor : Colors.grey[200]!,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withAlpha((255 * 0.05).round()),
@@ -146,14 +174,30 @@ class _CustomerChooseMechanicScreenState
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CustomerConfirmationScreen(),
-                  ),
-                );
-              },
+              onPressed: _selectedMechanicId == null
+                  ? null
+                  : () {
+                      final selectedMechanicData = _mechanics.firstWhere(
+                        (m) => m['id'] == _selectedMechanicId,
+                      );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CustomerConfirmationScreen(
+                            vehicle: widget.vehicle,
+                            serviceName: widget.serviceName,
+                            servicePrice: widget.servicePrice,
+                            address: widget.address,
+                            city: widget.city,
+                            issueDescription: widget.issueDescription,
+                            mechanicId: selectedMechanicData['id'],
+                            mechanicName: selectedMechanicData['name'],
+                            mechanicImage: selectedMechanicData['image'],
+                            mechanicRating: selectedMechanicData['rating'],
+                          ),
+                        ),
+                      );
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryColor,
                 foregroundColor: Colors.white,
@@ -163,6 +207,7 @@ class _CustomerChooseMechanicScreenState
                 ),
                 elevation: 5,
                 shadowColor: _primaryColor.withAlpha((255 * 0.4).round()),
+                disabledBackgroundColor: Colors.grey[300],
               ),
               child: Text(
                 'Continue',

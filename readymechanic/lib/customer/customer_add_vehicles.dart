@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -13,61 +15,27 @@ class _CustomerAddVehiclesScreenState extends State<CustomerAddVehiclesScreen> {
   final _primaryColor = const Color(0xFFea2a33);
 
   String? _selectedVehicleType;
-  String? _selectedMake;
-  String? _selectedModel;
+  final _makeController = TextEditingController();
+  final _modelController = TextEditingController();
+  final _regNoController = TextEditingController();
+  bool _isSaving = false;
 
   final List<String> _vehicleTypes = ['Car', 'Bike'];
-  final List<String> _carMakes = ['Toyota', 'Honda', 'Ford'];
-  final List<String> _bikeMakes = ['Yamaha', 'Suzuki', 'Harley-Davidson'];
-  final List<String> _toyotaModels = ['Camry', 'Corolla', 'RAV4'];
-  final List<String> _hondaModels = ['Civic', 'Accord', 'CR-V'];
-  final List<String> _fordModels = ['Focus', 'Mustang', 'F-150'];
-  final List<String> _yamahaModels = ['YZF-R1', 'MT-07', 'Tenere 700'];
-  final List<String> _suzukiModels = ['GSX-R1000', 'SV650', 'V-Strom 650'];
-  final List<String> _harleyModels = ['Street Glide', 'Iron 883', 'Fat Boy'];
 
-  List<String> _currentMakes = [];
-  List<String> _currentModels = [];
+  @override
+  void dispose() {
+    _regNoController.dispose();
+    _makeController.dispose();
+    _modelController.dispose();
+    super.dispose();
+  }
 
   void _onVehicleTypeChanged(String? newValue) {
     setState(() {
       _selectedVehicleType = newValue;
-      _selectedMake = null;
-      _selectedModel = null;
-      _currentMakes = [];
-      _currentModels = [];
-
-      if (newValue == 'Car') {
-        _currentMakes = _carMakes;
-      } else if (newValue == 'Bike') {
-        _currentMakes = _bikeMakes;
-      }
-    });
-  }
-
-  void _onMakeChanged(String? newValue) {
-    setState(() {
-      _selectedMake = newValue;
-      _selectedModel = null;
-      _currentModels = [];
-
-      if (_selectedVehicleType == 'Car') {
-        if (newValue == 'Toyota') {
-          _currentModels = _toyotaModels;
-        } else if (newValue == 'Honda') {
-          _currentModels = _hondaModels;
-        } else if (newValue == 'Ford') {
-          _currentModels = _fordModels;
-        }
-      } else if (_selectedVehicleType == 'Bike') {
-        if (newValue == 'Yamaha') {
-          _currentModels = _yamahaModels;
-        } else if (newValue == 'Suzuki') {
-          _currentModels = _suzukiModels;
-        } else if (newValue == 'Harley-Davidson') {
-          _currentModels = _harleyModels;
-        }
-      }
+      // Clear make and model when type changes
+      _makeController.clear();
+      _modelController.clear();
     });
   }
 
@@ -105,37 +73,26 @@ class _CustomerAddVehiclesScreenState extends State<CustomerAddVehiclesScreen> {
               onChanged: _onVehicleTypeChanged,
             ),
             const SizedBox(height: 16),
-            _buildDropdownField(
+            _buildTextField(
+              controller: _makeController,
               label: 'Make',
-              value: _selectedMake,
-              items: _currentMakes,
               hint: 'Select Make',
-              onChanged: _onMakeChanged,
-              enabled: _selectedVehicleType != null,
-            ),
-            const SizedBox(height: 16),
-            _buildDropdownField(
-              label: 'Model',
-              value: _selectedModel,
-              items: _currentModels,
-              hint: 'Select Model',
-              onChanged: (newValue) {
-                setState(() {
-                  _selectedModel = newValue;
-                });
-              },
-              enabled: _selectedMake != null,
             ),
             const SizedBox(height: 16),
             _buildTextField(
+              controller: _modelController,
+              label: 'Model',
+              hint: 'Select Model',
+            ),
+            const SizedBox(height: 16),
+            _buildTextField(
+              controller: _regNoController,
               label: 'Registration No.',
               hint: 'Enter Registration No.',
             ),
             const SizedBox(height: 32),
             ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Go back to vehicles list
-              },
+              onPressed: _isSaving ? null : _addVehicle,
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryColor,
                 foregroundColor: Colors.white,
@@ -145,19 +102,64 @@ class _CustomerAddVehiclesScreenState extends State<CustomerAddVehiclesScreen> {
                 ),
                 elevation: 5,
                 shadowColor: _primaryColor.withAlpha((255 * 0.4).round()),
+                disabledBackgroundColor: Colors.grey[300],
               ),
-              child: Text(
-                'Add Vehicle',
-                style: GoogleFonts.splineSans(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              child: _isSaving
+                  ? const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    )
+                  : Text(
+                      'Add Vehicle',
+                      style: GoogleFonts.splineSans(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _addVehicle() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null ||
+        _selectedVehicleType == null ||
+        _makeController.text.isEmpty ||
+        _modelController.text.isEmpty ||
+        _regNoController.text.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please fill all fields.')));
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('customers')
+          .doc(user.uid)
+          .collection('vehicles')
+          .add({
+            'type': _selectedVehicleType,
+            'make': _makeController.text.trim(),
+            'model': _modelController.text.trim(),
+            'registrationNo': _regNoController.text.trim(),
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to add vehicle: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   Widget _buildDropdownField({
@@ -219,7 +221,11 @@ class _CustomerAddVehiclesScreenState extends State<CustomerAddVehiclesScreen> {
     );
   }
 
-  Widget _buildTextField({required String label, required String hint}) {
+  Widget _buildTextField({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -245,6 +251,7 @@ class _CustomerAddVehiclesScreenState extends State<CustomerAddVehiclesScreen> {
             ],
           ),
           child: TextField(
+            controller: controller,
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: GoogleFonts.splineSans(color: Colors.grey[500]),

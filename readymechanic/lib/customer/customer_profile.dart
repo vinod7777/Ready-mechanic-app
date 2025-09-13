@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -13,6 +15,16 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
   final _secondaryColor = const Color(0xFFf7f7f7);
   final _textPrimary = const Color(0xFF1a1a1a);
   final _textSecondary = const Color(0xFF6b7280);
+
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _addressController = TextEditingController();
+
+  final _auth = FirebaseAuth.instance;
+  final _firestore = FirebaseFirestore.instance;
+
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -36,59 +48,93 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
         centerTitle: true,
         actions: const [SizedBox(width: 48)], // To balance the leading icon
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            _buildProfilePictureSection(),
-            const SizedBox(height: 16),
-            Text(
-              'Sophia Carter',
-              style: GoogleFonts.splineSans(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: _textPrimary,
-              ),
-            ),
-            Text(
-              'Member since 2021',
-              style: GoogleFonts.splineSans(
-                fontSize: 14,
-                color: _textSecondary,
-              ),
-            ),
-            const SizedBox(height: 32),
-            _buildProfileForm(),
-            const SizedBox(height: 24),
-            TextButton(
-              onPressed: () {
-                // TODO: Handle logout
-              },
-              child: Text(
-                'Logout',
-                style: GoogleFonts.splineSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.red[500],
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: _auth.currentUser != null
+            ? _firestore
+                  .collection('customers')
+                  .doc(_auth.currentUser!.uid)
+                  .snapshots()
+            : null,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return const Center(child: Text('User data not found.'));
+          }
+
+          final userData = snapshot.data!.data() as Map<String, dynamic>;
+          _nameController.text = userData['fullName'] ?? '';
+          _phoneController.text = userData['phone'] ?? '';
+          _cityController.text = userData['city'] ?? '';
+          _addressController.text = userData['address'] ?? '';
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _buildProfilePictureSection(userData['profileImageUrl']),
+                const SizedBox(height: 16),
+                Text(
+                  userData['fullName'] ?? 'No Name',
+                  style: GoogleFonts.splineSans(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: _textPrimary,
+                  ),
                 ),
-              ),
+                Text(
+                  'Email: ${userData['email'] ?? 'N/A'}',
+                  style: GoogleFonts.splineSans(
+                    fontSize: 14,
+                    color: _textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                _buildProfileForm(userData),
+                const SizedBox(height: 24),
+                TextButton(
+                  onPressed: _logout,
+                  child: Text(
+                    'Logout',
+                    style: GoogleFonts.splineSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.red[500],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildProfilePictureSection() {
+  Future<void> _logout() async {
+    await _auth.signOut();
+    if (mounted) {
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil('/login', (Route<dynamic> route) => false);
+    }
+  }
+
+  Widget _buildProfilePictureSection(String? imageUrl) {
     return Stack(
       alignment: Alignment.bottomRight,
       children: [
         CircleAvatar(
           radius: 64,
-          backgroundImage: NetworkImage(
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuB5r52uxl3F3tX1KTmTy2KCeDctb0tUKg3RSz2xvHYlsg0YZEOmuX1-Hh7MrNcHWz6AUtlDf-pa0vJjllUK7IFVDKk5H7F9uNcxoX8xemQptVQ8ipQCYL7wRxVSGHbLKbLVSfVC1Ond5GmwhJpdsRBf8ZoiB38VNwDJmsc8N3aBL6Tq2MFvHt0Jl5kHeI6cY9WvuUH1IGC0R1eCOXaFF3JeGH1_sDwUdRhknpBtw9WQvYOTSefnkOh0cljFTE8RIQSjdQmb-WDjqyU',
-          ),
+          backgroundImage: (imageUrl != null && imageUrl.isNotEmpty)
+              ? NetworkImage(imageUrl)
+              : null,
+          backgroundColor: Colors.grey[200],
+          child: (imageUrl == null || imageUrl.isEmpty)
+              ? Icon(Icons.person, size: 64, color: Colors.grey[400])
+              : null,
         ),
         Positioned(
           right: 0,
@@ -114,28 +160,26 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
     );
   }
 
-  Widget _buildProfileForm() {
+  Widget _buildProfileForm(Map<String, dynamic> userData) {
     return Form(
       child: Column(
         children: [
-          _buildTextField(label: 'Full Name', initialValue: 'Sophia Carter'),
+          _buildTextField(label: 'Full Name', controller: _nameController),
           _buildTextField(
             label: 'Phone',
-            initialValue: '(555) 123-4567',
+            controller: _phoneController,
             keyboardType: TextInputType.phone,
           ),
-          _buildTextField(label: 'City', initialValue: 'San Francisco'),
-          _buildTextField(label: 'Address', initialValue: '123 Main Street'),
+          _buildTextField(label: 'City', controller: _cityController),
+          _buildTextField(label: 'Address', controller: _addressController),
           _buildTextField(
             label: 'Email',
-            initialValue: 'sophia.carter@example.com',
+            controller: TextEditingController(text: userData['email'] ?? ''),
             readOnly: true,
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () {
-              // TODO: Handle save changes
-            },
+            onPressed: _isLoading ? null : _saveChanges,
             style: ElevatedButton.styleFrom(
               backgroundColor: _primaryColor,
               foregroundColor: Colors.white,
@@ -146,13 +190,17 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
               elevation: 5,
               shadowColor: _primaryColor.withAlpha((255 * 0.4).round()),
             ),
-            child: Text(
-              'Save Changes',
-              style: GoogleFonts.splineSans(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: _isLoading
+                ? const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  )
+                : Text(
+                    'Save Changes',
+                    style: GoogleFonts.splineSans(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
           ),
         ],
       ),
@@ -161,7 +209,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
 
   Widget _buildTextField({
     required String label,
-    required String initialValue,
+    required TextEditingController controller,
     TextInputType? keyboardType,
     bool readOnly = false,
   }) {
@@ -180,7 +228,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
           ),
           const SizedBox(height: 8),
           TextFormField(
-            initialValue: initialValue,
+            controller: controller,
             keyboardType: keyboardType,
             readOnly: readOnly,
             style: GoogleFonts.splineSans(color: _textPrimary),
@@ -208,5 +256,37 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _saveChanges() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      await _firestore.collection('customers').doc(user.uid).update({
+        'fullName': _nameController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'city': _cityController.text.trim(),
+        'address': _addressController.text.trim(),
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile updated successfully!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to update profile: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 }

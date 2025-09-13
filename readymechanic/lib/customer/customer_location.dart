@@ -3,8 +3,16 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:readymechanic/customer/customer_choose_mechanic.dart';
 
 class CustomerLocationScreen extends StatefulWidget {
-  const CustomerLocationScreen({super.key});
+  final String vehicle;
+  final String serviceName;
+  final int servicePrice;
 
+  const CustomerLocationScreen({
+    super.key,
+    required this.vehicle,
+    required this.serviceName,
+    required this.servicePrice,
+  });
   @override
   State<CustomerLocationScreen> createState() => _CustomerLocationScreenState();
 }
@@ -14,6 +22,18 @@ class _CustomerLocationScreenState extends State<CustomerLocationScreen> {
   final _backgroundColor = const Color(0xFFf7f8fa);
   final _textPrimary = const Color(0xFF1a1a1a);
   final _textSecondary = const Color(0xFF6b7280);
+
+  final _addressController = TextEditingController(text: '2118 Thornridge Cir');
+  final _cityController = TextEditingController(text: 'Syracuse');
+  final _issueController = TextEditingController();
+
+  @override
+  void dispose() {
+    _addressController.dispose();
+    _cityController.dispose();
+    _issueController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,18 +99,19 @@ class _CustomerLocationScreenState extends State<CustomerLocationScreen> {
             ),
             const SizedBox(height: 32),
             _buildTextField(
+              controller: _addressController,
               label: 'Address',
-              initialValue: '2118 Thornridge Cir',
               icon: Icons.location_on,
             ),
             const SizedBox(height: 24),
             _buildTextField(
+              controller: _cityController,
               label: 'City',
-              initialValue: 'Syracuse',
               icon: Icons.location_city,
             ),
             const SizedBox(height: 24),
             _buildTextArea(
+              controller: _issueController,
               label: 'Describe the Issue (optional)',
               placeholder: 'e.g., Engine is making a strange noise.',
             ),
@@ -114,11 +135,11 @@ class _CustomerLocationScreenState extends State<CustomerLocationScreen> {
 
   Widget _buildTextField({
     required String label,
-    required String initialValue,
     required IconData icon,
+    required TextEditingController controller,
   }) {
     return TextFormField(
-      initialValue: initialValue,
+      controller: controller,
       style: GoogleFonts.splineSans(color: _textPrimary, fontSize: 16),
       decoration: InputDecoration(
         labelText: label,
@@ -146,8 +167,13 @@ class _CustomerLocationScreenState extends State<CustomerLocationScreen> {
     );
   }
 
-  Widget _buildTextArea({required String label, required String placeholder}) {
+  Widget _buildTextArea({
+    required String label,
+    required String placeholder,
+    required TextEditingController controller,
+  }) {
     return TextFormField(
+      controller: controller,
       maxLines: 4,
       style: GoogleFonts.splineSans(color: _textPrimary, fontSize: 16),
       decoration: InputDecoration(
@@ -191,7 +217,14 @@ class _CustomerLocationScreenState extends State<CustomerLocationScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const CustomerChooseMechanicScreen(),
+                    builder: (context) => CustomerChooseMechanicScreen(
+                      vehicle: widget.vehicle,
+                      serviceName: widget.serviceName,
+                      servicePrice: widget.servicePrice,
+                      address: _addressController.text,
+                      city: _cityController.text,
+                      issueDescription: _issueController.text,
+                    ),
                   ),
                 );
               },

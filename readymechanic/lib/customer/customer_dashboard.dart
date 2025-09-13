@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -81,16 +83,56 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
   }
 
   Widget _buildStatsList() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return _buildStatCards(0, 0, 0); // Show 0 if not logged in
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('bookings')
+          .where('customerId', isEqualTo: user.uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildStatCards(null, null, null); // Loading state
+        }
+        if (snapshot.hasError || !snapshot.hasData) {
+          return _buildStatCards(0, 0, 0); // Error or no data state
+        }
+
+        final bookings = snapshot.data!.docs;
+        final totalBookings = bookings.length;
+        final completedServices = bookings
+            .where((doc) => doc['status'] == 'completed')
+            .length;
+        final ongoingBookings = bookings
+            .where(
+              (doc) =>
+                  doc['status'] == 'accepted' || doc['status'] == 'inprogress',
+            )
+            .length;
+
+        return _buildStatCards(
+          totalBookings,
+          completedServices,
+          ongoingBookings,
+        );
+      },
+    );
+  }
+
+  Widget _buildStatCards(int? total, int? completed, int? ongoing) {
     return Column(
       children: [
         GestureDetector(
           onTap: () => Navigator.pushNamed(context, '/customer_booking'),
-          child: _buildStatCard('Total Bookings', '12'),
+          child: _buildStatCard('Total Bookings', total?.toString() ?? '...'),
         ),
         const SizedBox(height: 16),
-        _buildStatCard('Completed Services', '10'),
+        _buildStatCard('Completed Services', completed?.toString() ?? '...'),
         const SizedBox(height: 16),
-        _buildStatCard('Ongoing Bookings', '2'),
+        _buildStatCard('Ongoing Bookings', ongoing?.toString() ?? '...'),
       ],
     );
   }

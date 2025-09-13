@@ -1,8 +1,34 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'dart:math';
 import 'package:google_fonts/google_fonts.dart';
 
 class CustomerConfirmationScreen extends StatefulWidget {
-  const CustomerConfirmationScreen({super.key});
+  final String vehicle;
+  final String serviceName;
+  final int servicePrice;
+  final String address;
+  final String city;
+  final String issueDescription;
+  final String mechanicId;
+  final String mechanicName;
+  final String mechanicImage;
+  final String mechanicRating;
+
+  const CustomerConfirmationScreen({
+    super.key,
+    required this.vehicle,
+    required this.serviceName,
+    required this.servicePrice,
+    required this.address,
+    required this.city,
+    required this.issueDescription,
+    required this.mechanicId,
+    required this.mechanicName,
+    required this.mechanicImage,
+    required this.mechanicRating,
+  });
 
   @override
   State<CustomerConfirmationScreen> createState() =>
@@ -17,6 +43,8 @@ class _CustomerConfirmationScreenState
   final _textSecondary = const Color(
     0xFF6b7280,
   ); // Corresponds to text-gray-500
+
+  bool _isBooking = false;
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +111,7 @@ class _CustomerConfirmationScreenState
                         height: 64,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
-                          image: const DecorationImage(
+                          image: DecorationImage(
                             image: NetworkImage(
                               'https://lh3.googleusercontent.com/aida-public/AB6AXuBVLhO1D92MKcoKpWcG6ODC_BUb74IsUsDR0CEvWtOV2Ep8tcfvwHAfY1OWfaQ68Vct4BbOhf7zOec1zeU50PTVLp3jTfEANv94FA2Zyexz5Si9m-jXRilXYvk6McZl6mh85SdCA94U2Lc3oTAZzT2ituURc-eeEKIcP9Hmj0ycyz5nSO25_TW5Efe5xbeZ0UtJmGdUry93Ticj-snQ0YR0IcTKGdAPHAQ1OFnH87HVE6lR4uhny6_w-3KJ-P5ZS35hTJUPV3PW7J0',
                             ),
@@ -96,7 +124,7 @@ class _CustomerConfirmationScreenState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Honda Civic',
+                            widget.vehicle.split(' - ')[0],
                             style: GoogleFonts.splineSans(
                               color: _textPrimary,
                               fontSize: 16,
@@ -104,7 +132,9 @@ class _CustomerConfirmationScreenState
                             ),
                           ),
                           Text(
-                            '2018',
+                            widget.vehicle.split(' - ').length > 1
+                                ? widget.vehicle.split(' - ')[1]
+                                : '',
                             style: GoogleFonts.splineSans(
                               color: _textSecondary,
                               fontSize: 14,
@@ -155,14 +185,14 @@ class _CustomerConfirmationScreenState
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Oil Change',
+                            widget.serviceName,
                             style: GoogleFonts.splineSans(
                               color: _textPrimary,
                               fontSize: 16,
                             ),
                           ),
                           Text(
-                            '\$50.00',
+                            '₹${widget.servicePrice}',
                             style: GoogleFonts.splineSans(
                               color: _textPrimary,
                               fontSize: 16,
@@ -187,7 +217,7 @@ class _CustomerConfirmationScreenState
                             ),
                           ),
                           Text(
-                            '\$5.00',
+                            '₹0', // Assuming no service fee for now
                             style: GoogleFonts.splineSans(
                               color: _textPrimary,
                               fontSize: 16,
@@ -213,7 +243,7 @@ class _CustomerConfirmationScreenState
                             ),
                           ),
                           Text(
-                            '\$55.00',
+                            '₹${widget.servicePrice}',
                             style: GoogleFonts.splineSans(
                               color: _primaryColor,
                               fontSize: 18,
@@ -273,7 +303,7 @@ class _CustomerConfirmationScreenState
                       const SizedBox(width: 16),
                       Expanded(
                         child: Text(
-                          '123 Main St, Anytown, USA',
+                          '${widget.address}, ${widget.city}',
                           style: GoogleFonts.splineSans(
                             color: _textPrimary,
                             fontSize: 16,
@@ -322,16 +352,14 @@ class _CustomerConfirmationScreenState
                     children: [
                       CircleAvatar(
                         radius: 32,
-                        backgroundImage: NetworkImage(
-                          'https://lh3.googleusercontent.com/aida-public/AB6AXuBjZ4W_ShhWJG7gN3YhHcbLlwnb8X-Fn3DWD15M5Kev5TrbyHZG73odnhhzqyPTYdRLOHicgxO7FByvlzcjHpKnpUdVg43C1hYWS0Jme7jmitcuMwfgsWq78RWQSfbq70E-D070KhE_KWkCt4X6HpVBukyCwazc-SMB0TMa1f1dnjycE-7IoyHlMfYwtfnNkWnUuf6ERz6KjxCUig7-mFE1BOiskskM-vljK5CmO-Bu5UVJKJeIpEAVOMwThMlJC9gao7kN_BF9fow',
-                        ),
+                        backgroundImage: NetworkImage(widget.mechanicImage),
                       ),
                       const SizedBox(width: 16),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Ethan Carter',
+                            widget.mechanicName,
                             style: GoogleFonts.splineSans(
                               color: _textPrimary,
                               fontSize: 16,
@@ -347,7 +375,7 @@ class _CustomerConfirmationScreenState
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '4.8 (120 reviews)',
+                                '${widget.mechanicRating} (120 reviews)',
                                 style: GoogleFonts.splineSans(
                                   color: _textSecondary,
                                   fontSize: 14,
@@ -381,9 +409,7 @@ class _CustomerConfirmationScreenState
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: ElevatedButton(
-              onPressed: () {
-                // TODO: Handle Confirm & Book
-              },
+              onPressed: _isBooking ? null : _confirmAndBook,
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryColor,
                 foregroundColor: Colors.white,
@@ -394,17 +420,88 @@ class _CustomerConfirmationScreenState
                 elevation: 5,
                 shadowColor: _primaryColor.withAlpha((255 * 0.4).round()),
               ),
-              child: Text(
-                'Confirm & Book',
-                style: GoogleFonts.splineSans(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              child: _isBooking
+                  ? const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    )
+                  : Text(
+                      'Confirm & Book',
+                      style: GoogleFonts.splineSans(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _generateOTP() {
+    var rng = Random();
+    return (100000 + rng.nextInt(900000)).toString();
+  }
+
+  Future<void> _confirmAndBook() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must be logged in to book.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isBooking = true;
+    });
+
+    try {
+      final serviceStartOTP = _generateOTP();
+
+      await FirebaseFirestore.instance.collection('bookings').add({
+        'customerId': user.uid,
+        'customerName': user.displayName ?? 'N/A',
+        'mechanicId': widget.mechanicId,
+        'mechanicName': widget.mechanicName,
+        'mechanicImage': widget.mechanicImage, // Added mechanic image
+        'service': widget.serviceName, // Corrected field name
+        'serviceCost': widget.servicePrice, // Corrected field name
+        'vehicle': {
+          // Saving as a map to match your structure
+          'make': widget.vehicle.split(' - ')[0],
+          'model': widget.vehicle.split(' - ').length > 1
+              ? widget.vehicle.split(' - ')[1]
+              : '',
+          'type': 'Car', // Assuming 'Car' for now, can be made dynamic later
+        },
+        'address': '${widget.address}, ${widget.city}',
+        'description': widget.issueDescription, // Corrected field name
+        'createdAt': FieldValue.serverTimestamp(), // Corrected field name
+        'status': 'pending',
+        'serviceStartOTP': serviceStartOTP,
+      });
+
+      if (!mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        '/customer_dashboard',
+        (Route<dynamic> route) => false,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Booking confirmed successfully!')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to create booking: $e')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isBooking = false;
+        });
+      }
+    }
   }
 }

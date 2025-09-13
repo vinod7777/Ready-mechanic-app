@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -11,14 +13,10 @@ class CustomerVehiclesScreen extends StatefulWidget {
 class _CustomerVehiclesScreenState extends State<CustomerVehiclesScreen> {
   final _primaryColor = const Color(0xFFea2a33);
 
-  // Mock data for vehicles
-  final List<Map<String, String>> _vehicles = [
-    {'name': 'Toyota Camry', 'regNo': '123456'},
-    {'name': 'Honda Civic', 'regNo': '789012'},
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -39,14 +37,39 @@ class _CustomerVehiclesScreenState extends State<CustomerVehiclesScreen> {
         centerTitle: true,
         actions: const [SizedBox(width: 48)], // To balance the leading icon
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemCount: _vehicles.length,
-        itemBuilder: (context, index) {
-          final vehicle = _vehicles[index];
-          return _buildVehicleCard(vehicle['name']!, vehicle['regNo']!);
-        },
-      ),
+      body: user == null
+          ? const Center(child: Text('Please log in to see your vehicles.'))
+          : StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('customers')
+                  .doc(user.uid)
+                  .collection('vehicles')
+                  .orderBy('createdAt', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(
+                    child: Text('No vehicles added yet. Add one!'),
+                  );
+                }
+
+                final vehicles = snapshot.data!.docs;
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16.0),
+                  itemCount: vehicles.length,
+                  itemBuilder: (context, index) {
+                    return _buildVehicleCard(vehicles[index]);
+                  },
+                );
+              },
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.pushNamed(context, '/customer_add_vehicles');
@@ -57,7 +80,11 @@ class _CustomerVehiclesScreenState extends State<CustomerVehiclesScreen> {
     );
   }
 
-  Widget _buildVehicleCard(String name, String regNo) {
+  Widget _buildVehicleCard(DocumentSnapshot vehicleDoc) {
+    final vehicleData = vehicleDoc.data() as Map<String, dynamic>;
+    final name = '${vehicleData['make'] ?? ''} ${vehicleData['model'] ?? ''}';
+    final regNo = vehicleData['registrationNo'] ?? 'N/A';
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16.0),
       elevation: 2,
@@ -91,7 +118,7 @@ class _CustomerVehiclesScreenState extends State<CustomerVehiclesScreen> {
             ),
             IconButton(
               onPressed: () {
-                // TODO: Handle delete vehicle
+                vehicleDoc.reference.delete();
               },
               icon: const Icon(Icons.delete_outline, color: Colors.grey),
               splashRadius: 24,

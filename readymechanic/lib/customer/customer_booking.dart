@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -14,62 +16,16 @@ class CustomerBookingsListScreen extends StatefulWidget {
 class _CustomerBookingsListScreenState
     extends State<CustomerBookingsListScreen> {
   String _selectedFilter = 'All';
-
-  // Mock data
-  final List<Map<String, dynamic>> bookings = [
-    {
-      'mechanic': 'Alex',
-      'service': 'Oil Change',
-      'vehicle': 'Honda Civic',
-      'date': '2023-10-27',
-      'status': BookingStatus.pending,
-    },
-    {
-      'mechanic': 'Ben',
-      'service': 'Brake Repair',
-      'vehicle': 'Toyota Camry',
-      'date': '2023-10-26',
-      'status': BookingStatus.accepted,
-    },
-    {
-      'mechanic': 'Chris',
-      'service': 'Tire Rotation',
-      'vehicle': 'Ford Focus',
-      'date': '2023-10-25',
-      'status': BookingStatus.inProgress,
-    },
-    {
-      'mechanic': 'David',
-      'service': 'Engine Tune-Up',
-      'vehicle': 'Chevrolet Malibu',
-      'date': '2023-10-24',
-      'status': BookingStatus.completed,
-    },
-  ];
+  final _auth = FirebaseAuth.instance;
 
   @override
   Widget build(BuildContext context) {
-    final filteredBookings = _selectedFilter == 'All'
-        ? bookings
-        : bookings
-              .where(
-                (b) =>
-                    b['status'].toString().split('.').last.toLowerCase() ==
-                    _selectedFilter.toLowerCase(),
-              )
-              .toList();
-
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(120.0),
         child: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 1,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
+          
           title: Text(
             'Bookings',
             style: GoogleFonts.splineSans(
@@ -87,15 +43,56 @@ class _CustomerBookingsListScreenState
           ),
         ),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemCount: filteredBookings.length,
-        itemBuilder: (context, index) {
-          final booking = filteredBookings[index];
-          return _buildBookingCard(booking);
+      body: StreamBuilder<QuerySnapshot>(
+        stream: _getBookingsStream(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text('No bookings found.'));
+          }
+
+          final bookings = snapshot.data!.docs;
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16.0),
+            itemCount: bookings.length,
+            itemBuilder: (context, index) {
+              final booking = bookings[index].data() as Map<String, dynamic>;
+              final bookingId = bookings[index].id;
+              return _buildBookingCard(booking, bookingId);
+            },
+          );
         },
       ),
     );
+  }
+
+  Stream<QuerySnapshot> _getBookingsStream() {
+    final user = _auth.currentUser;
+    if (user == null) {
+      return const Stream.empty();
+    }
+
+    Query query = FirebaseFirestore.instance
+        .collection('bookings')
+        .where('customerId', isEqualTo: user.uid);
+
+    if (_selectedFilter != 'All') {
+      query = query.where('status', isEqualTo: _selectedFilter.toLowerCase());
+    }
+
+    return query.snapshots();
+  }
+
+  String _capitalize(String s) {
+    if (s.isEmpty) return s;
+    if (s == 'inProgress') return 'In-Progress';
+    return s[0].toUpperCase() + s.substring(1);
   }
 
   Widget _buildFilterDropdown() {
@@ -119,15 +116,15 @@ class _CustomerBookingsListScreenState
           items:
               <String>[
                 'All',
-                'pending',
-                'accepted',
-                'inProgress',
-                'completed',
+                'Pending',
+                'Accepted',
+                'InProgress',
+                'Completed',
               ].map<DropdownMenuItem<String>>((String value) {
                 return DropdownMenuItem<String>(
                   value: value,
                   child: Text(
-                    value,
+                    _capitalize(value),
                     style: GoogleFonts.splineSans(
                       color: Colors.grey[700],
                       fontWeight: FontWeight.w500,
@@ -140,7 +137,7 @@ class _CustomerBookingsListScreenState
     );
   }
 
-  Widget _buildBookingCard(Map<String, dynamic> booking) {
+  Widget _buildBookingCard(Map<String, dynamic> booking, String bookingId) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16.0),
       elevation: 2,
@@ -148,7 +145,14 @@ class _CustomerBookingsListScreenState
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
       child: InkWell(
         onTap: () {
-          Navigator.pushNamed(context, '/customer_booking_details');
+          // Add bookingId to the map and pass it to the details screen
+          final arguments = Map<String, dynamic>.from(booking);
+          arguments['bookingId'] = bookingId;
+          Navigator.pushNamed(
+            context,
+            '/customer_booking_details',
+            arguments: arguments,
+          );
         },
         borderRadius: BorderRadius.circular(12.0),
         child: Padding(
@@ -161,7 +165,7 @@ class _CustomerBookingsListScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Mechanic: ${booking["mechanic"]}',
+                      'Mechanic: ${booking["mechanicName"] ?? 'N/A'}',
                       style: GoogleFonts.splineSans(
                         color: Colors.grey[600],
                         fontSize: 12,
@@ -169,7 +173,8 @@ class _CustomerBookingsListScreenState
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      booking['service'],
+                      booking['service'] ??
+                          'Unknown Service', // Use 'service' field
                       style: GoogleFonts.splineSans(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -178,7 +183,7 @@ class _CustomerBookingsListScreenState
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Vehicle: ${booking["vehicle"]}',
+                      'Vehicle: ${booking["vehicle"]?['make'] ?? ''} ${booking["vehicle"]?['model'] ?? ''}', // Use vehicle map
                       style: GoogleFonts.splineSans(
                         color: Colors.grey[600],
                         fontSize: 14,
@@ -186,7 +191,7 @@ class _CustomerBookingsListScreenState
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Date: ${booking["date"]}',
+                      'Date: ${booking["createdAt"]?.toDate().toString().substring(0, 10) ?? 'N/A'}', // Use 'createdAt' field
                       style: GoogleFonts.splineSans(
                         color: Colors.grey[600],
                         fontSize: 12,
@@ -198,7 +203,17 @@ class _CustomerBookingsListScreenState
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  _getStatusBadge(booking['status']),
+                  _getStatusBadgeFromString(booking['status']),
+                  const SizedBox(height: 8),
+                  if (booking['serviceCost'] != null)
+                    Text(
+                      '₹${booking['serviceCost']}', // Use 'serviceCost' field
+                      style: GoogleFonts.splineSans(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.black87,
+                      ),
+                    ),
                   const SizedBox(height: 16),
                   const Icon(Icons.chevron_right, color: Colors.grey),
                 ],
@@ -210,17 +225,30 @@ class _CustomerBookingsListScreenState
     );
   }
 
-  Widget _getStatusBadge(BookingStatus status) {
+  Widget _getStatusBadgeFromString(String? statusStr) {
+    BookingStatus status;
+    switch (statusStr?.toLowerCase()) {
+      case 'pending':
+        status = BookingStatus.pending;
+        break;
+      case 'accepted':
+        status = BookingStatus.accepted;
+        break;
+      case 'inprogress':
+        status = BookingStatus.inProgress;
+        break;
+      case 'completed':
+        status = BookingStatus.completed;
+        break;
+      default:
+        status = BookingStatus.pending; // Default case
+    }
+
     Color color;
     String text;
     Color textColor;
 
     switch (status) {
-      case BookingStatus.pending:
-        color = Colors.yellow[100]!;
-        text = 'Pending';
-        textColor = Colors.yellow[800]!;
-        break;
       case BookingStatus.accepted:
         color = Colors.blue[100]!;
         text = 'Accepted';
@@ -235,6 +263,11 @@ class _CustomerBookingsListScreenState
         color = Colors.green[100]!;
         text = 'Completed';
         textColor = Colors.green[800]!;
+        break;
+      case BookingStatus.pending:
+        color = Colors.yellow[100]!;
+        text = 'Pending';
+        textColor = Colors.yellow[800]!;
         break;
     }
 
