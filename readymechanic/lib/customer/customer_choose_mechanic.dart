@@ -1,0 +1,277 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:readymechanic/customer/customer_confirmation.dart';
+
+class CustomerChooseMechanicScreen extends StatefulWidget {
+  const CustomerChooseMechanicScreen({super.key});
+
+  @override
+  State<CustomerChooseMechanicScreen> createState() =>
+      _CustomerChooseMechanicScreenState();
+}
+
+class _CustomerChooseMechanicScreenState
+    extends State<CustomerChooseMechanicScreen> {
+  int _selectedIndex = 1; // Bookings tab
+
+  final _primaryColor = const Color(0xFFea2a33);
+  final _backgroundColor = const Color(0xFFf7f8fa); // Corresponds to bg-gray-50
+  final _textPrimary = const Color(0xFF1a1a1a); // Corresponds to text-gray-900
+  final _textSecondary = const Color(
+    0xFF6b7280,
+  ); // Corresponds to text-gray-500
+
+  final List<Map<String, dynamic>> _mechanics = [
+    {
+      'name': 'Ethan Carter',
+      'experience': '10+ years of experience',
+      'rating': '4.9',
+      'specializations': 'Engine repair, brake service, electrical systems',
+      'image':
+          'https://lh3.googleusercontent.com/aida-public/AB6AXuC-1C7d1XXJLAMHksF2blT4QUdw585HQDzxMO1iYX5SOi2H0ljU2e4xh3DtBvTwKZQtXXS7rjoD-UgTG1DhXKzuycpzWwK-Mfs0vbtvFUiH4g9_yBuFBFXFQIYF1vnJV6VFfFreqxYxOzPTc_izk9-RvrkQUUH3bb5qo-0C2iwXl-UiIyuw7bxy0XfHA3nYzIFT9wW1pTEt9LzyT65OFIO86ZaSoTUYcoERyQK3Sqz1V8_hHhfQ3qzajam9muuJwTAO68wtAnkWhkM',
+    },
+    {
+      'name': 'Olivia Bennett',
+      'experience': '5+ years of experience',
+      'rating': '4.7',
+      'specializations': 'Tire changes, oil changes, routine maintenance',
+      'image':
+          'https://lh3.googleusercontent.com/aida-public/AB6AXuAQZyTUZj_5aHq5eM_D8Bhr0K_zifZdcgKcJWv4h0ZwhLACgKGRAxkfXcSY3xGBh41Yzz9vSW3Bh8UOAuP6GLiPPcGWurO44B4pLIjz4-VZkA6K-w0lbtrRz4pvXn6-2y3rv2CXD0tTvz02LpVmvQKTJ34xkWtB1sETd9w0ZL_KGcpe99WcMuxijat_6r-hbBwhnTyARuXMVvr3C2CXD0tTvz02LpVmvQKTJ34xkWtB1sETd9w0ZL_KGcpe99WcMuxijat_6r-hbBwhnTyARuXMVvr3C4xBEqmUmnRiitD7kofmD4SXN_h0KOJnPfUx2zoGugkbKQpTY4szauO8Q_gvCaM',
+    },
+    {
+      'name': 'Noah Thompson',
+      'experience': '8+ years of experience',
+      'rating': '4.8',
+      'specializations': 'Transmission repair, diagnostics, suspension',
+      'image':
+          'https://lh3.googleusercontent.com/aida-public/AB6AXuCXHm9DDZHrl5jqSN9nPuLy3sqU48BjDHUKl8UQZ8WhBb3ULW7RnCukmlBZuxKM9htqa10-cDTJCOlAtVNs9p_RhnKw8mkdjfOUFhsINf-rQ3EbYOZ-cBOI3kCxByFkIrWRb2n-_V5U7IeTKEvb03mpaFZPqPwR5aQkOSRK6vZxqRarjFpEQFxXhaRQOTCF39yVgBuxPW8hf2hmIktKZ-VIsjBgW0ED8BDU_lPi3OXbPautlZ9M4-Qkhe2CwMdengFsJJoLN3378Go',
+    },
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    // TODO: Handle navigation to other screens based on index
+    if (index == 0) {
+      Navigator.pushReplacementNamed(context, '/customer_dashboard');
+    } else if (index == 2) {
+      Navigator.pushReplacementNamed(context, '/customer_vehicles');
+    } else if (index == 3) {
+      Navigator.pushReplacementNamed(context, '/customer_profile');
+    }
+  }
+
+  Widget _buildMechanicCard(Map<String, dynamic> mechanic) {
+    return GestureDetector(
+      onTap: () {
+        // TODO: Handle mechanic selection
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 28,
+                backgroundImage: NetworkImage(mechanic['image']),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          mechanic['name'],
+                          style: GoogleFonts.splineSans(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: _textPrimary,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.star,
+                              color: Colors.amber,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              mechanic['rating'],
+                              style: GoogleFonts.splineSans(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: _textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      mechanic['experience'],
+                      style: GoogleFonts.splineSans(
+                        fontSize: 14,
+                        color: _textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Specializations: ${mechanic['specializations']}',
+                      style: GoogleFonts.splineSans(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Colors.grey[200]!, width: 1)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CustomerConfirmationScreen(),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primaryColor,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 56),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
+                ),
+                elevation: 5,
+                shadowColor: _primaryColor.withOpacity(0.4),
+              ),
+              child: Text(
+                'Continue',
+                style: GoogleFonts.splineSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          BottomNavigationBar(
+            items: const <BottomNavigationBarItem>[
+              BottomNavigationBarItem(
+                icon: Icon(Icons.dashboard_outlined),
+                label: 'Dashboard',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.calendar_month_outlined),
+                label: 'Bookings',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.directions_car_outlined),
+                label: 'Vehicles',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                label: 'Profile',
+              ),
+            ],
+            currentIndex: _selectedIndex,
+            selectedItemColor: _primaryColor,
+            unselectedItemColor: _textSecondary,
+            onTap: _onItemTapped,
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.white,
+            elevation: 0,
+            showUnselectedLabels: true,
+            selectedLabelStyle: GoogleFonts.splineSans(
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+            unselectedLabelStyle: GoogleFonts.splineSans(
+              fontWeight: FontWeight.w500,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _backgroundColor,
+      appBar: AppBar(
+        backgroundColor: _backgroundColor,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          'Select a mechanic',
+          style: GoogleFonts.splineSans(
+            color: _textPrimary,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _mechanics.length,
+              itemBuilder: (context, index) {
+                final mechanic = _mechanics[index];
+                return _buildMechanicCard(mechanic);
+              },
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: _buildBottomNavigationBar(),
+    );
+  }
+}
