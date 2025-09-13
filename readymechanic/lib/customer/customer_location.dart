@@ -1,4 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart' as geocoding;
+import 'package:geolocator/geolocator.dart' as geolocator;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:readymechanic/customer/customer_choose_mechanic.dart';
 
@@ -23,9 +27,84 @@ class _CustomerLocationScreenState extends State<CustomerLocationScreen> {
   final _textPrimary = const Color(0xFF1a1a1a);
   final _textSecondary = const Color(0xFF6b7280);
 
-  final _addressController = TextEditingController(text: '2118 Thornridge Cir');
-  final _cityController = TextEditingController(text: 'Syracuse');
+  final _addressController = TextEditingController();
+  final _cityController = TextEditingController();
   final _issueController = TextEditingController();
+  bool _isLoadingAddress = true;
+  bool _isGettingLocation = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserAddress();
+  }
+
+  Future<void> _fetchUserAddress() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() => _isLoadingAddress = false);
+      return;
+    }
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('customers')
+          .doc(user.uid)
+          .get();
+      if (doc.exists && mounted) {
+        setState(() {
+          _addressController.text = doc.data()?['address'] ?? '';
+          _cityController.text = doc.data()?['city'] ?? '';
+        });
+      }
+    } catch (e) {
+      // Handle error if needed
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingAddress = false);
+      }
+    }
+  }
+
+  Future<void> _getCurrentLocation() async {
+    setState(() => _isGettingLocation = true);
+    try {
+      bool serviceEnabled =
+          await geolocator.Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) throw ('Location services are disabled.');
+
+      geolocator.LocationPermission permission =
+          await geolocator.Geolocator.checkPermission();
+      if (permission == geolocator.LocationPermission.denied) {
+        permission = await geolocator.Geolocator.requestPermission();
+        if (permission == geolocator.LocationPermission.denied) {
+          throw ('Location permissions are denied');
+        }
+      }
+      if (permission == geolocator.LocationPermission.deniedForever) {
+        throw ('Location permissions are permanently denied.');
+      }
+
+      geolocator.Position position =
+          await geolocator.Geolocator.getCurrentPosition();
+      List<geocoding.Placemark> placemarks = await geocoding
+          .placemarkFromCoordinates(position.latitude, position.longitude);
+
+      if (placemarks.isNotEmpty && mounted) {
+        final place = placemarks.first;
+        _addressController.text = '${place.street}, ${place.subLocality}'
+            .replaceAll(', ,', ',');
+        _cityController.text = place.locality ?? '';
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    } finally {
+      if (mounted) setState(() => _isGettingLocation = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -98,11 +177,41 @@ class _CustomerLocationScreenState extends State<CustomerLocationScreen> {
               ),
             ),
             const SizedBox(height: 32),
-            _buildTextField(
-              controller: _addressController,
-              label: 'Address',
-              icon: Icons.location_on,
+            _buildCurrentLocationButton(),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Expanded(child: Divider()),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Text(
+                    'OR',
+                    style: GoogleFonts.splineSans(color: _textSecondary),
+                  ),
+                ),
+                const Expanded(child: Divider()),
+              ],
             ),
+            const SizedBox(height: 16),
+            if (_isLoadingAddress)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 8),
+                      Text('Loading saved address...'),
+                    ],
+                  ),
+                ),
+              )
+            else
+              _buildTextField(
+                controller: _addressController,
+                label: 'Address',
+                icon: Icons.location_on,
+              ),
             const SizedBox(height: 24),
             _buildTextField(
               controller: _cityController,
@@ -119,6 +228,31 @@ class _CustomerLocationScreenState extends State<CustomerLocationScreen> {
         ),
       ),
       bottomNavigationBar: _buildBottomNavigationBar(),
+    );
+  }
+
+  Widget _buildCurrentLocationButton() {
+    return OutlinedButton.icon(
+      onPressed: _isGettingLocation ? null : _getCurrentLocation,
+      icon: _isGettingLocation
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Icon(Icons.my_location, color: _primaryColor),
+      label: Text(
+        _isGettingLocation ? 'Getting Location...' : 'Use Current Location',
+        style: GoogleFonts.splineSans(
+          fontWeight: FontWeight.bold,
+          color: _primaryColor,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(double.infinity, 52),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        side: BorderSide(color: _primaryColor),
+      ),
     );
   }
 

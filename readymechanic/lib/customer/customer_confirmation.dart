@@ -110,13 +110,13 @@ class _CustomerConfirmationScreenState
                         width: 64,
                         height: 64,
                         decoration: BoxDecoration(
+                          color: Colors.grey[200],
                           borderRadius: BorderRadius.circular(8),
-                          image: DecorationImage(
-                            image: NetworkImage(
-                              'https://lh3.googleusercontent.com/aida-public/AB6AXuBVLhO1D92MKcoKpWcG6ODC_BUb74IsUsDR0CEvWtOV2Ep8tcfvwHAfY1OWfaQ68Vct4BbOhf7zOec1zeU50PTVLp3jTfEANv94FA2Zyexz5Si9m-jXRilXYvk6McZl6mh85SdCA94U2Lc3oTAZzT2ituURc-eeEKIcP9Hmj0ycyz5nSO25_TW5Efe5xbeZ0UtJmGdUry93Ticj-snQ0YR0IcTKGdAPHAQ1OFnH87HVE6lR4uhny6_w-3KJ-P5ZS35hTJUPV3PW7J0',
-                            ),
-                            fit: BoxFit.cover,
-                          ),
+                        ),
+                        child: Icon(
+                          Icons.directions_car,
+                          color: Colors.grey[400],
+                          size: 32,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -375,7 +375,7 @@ class _CustomerConfirmationScreenState
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '${widget.mechanicRating} (120 reviews)',
+                                '${widget.mechanicRating} / 5.0',
                                 style: GoogleFonts.splineSans(
                                   color: _textSecondary,
                                   fontSize: 14,
@@ -456,12 +456,22 @@ class _CustomerConfirmationScreenState
       _isBooking = true;
     });
 
+    String? customerImage;
+    try {
+      final customerDoc =
+          await FirebaseFirestore.instance.collection('customers').doc(user.uid).get();
+      if (customerDoc.exists) {
+        customerImage = customerDoc.data()?['photoURL'];
+      }
+    } catch (_) {}
+
     try {
       final serviceStartOTP = _generateOTP();
 
       await FirebaseFirestore.instance.collection('bookings').add({
         'customerId': user.uid,
         'customerName': user.displayName ?? 'N/A',
+        'customerImage': customerImage,
         'mechanicId': widget.mechanicId,
         'mechanicName': widget.mechanicName,
         'mechanicImage': widget.mechanicImage, // Added mechanic image

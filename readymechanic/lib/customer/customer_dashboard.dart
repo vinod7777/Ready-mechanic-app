@@ -13,6 +13,7 @@ class CustomerDashboardScreen extends StatefulWidget {
 
 class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
   final _primaryColor = const Color(0xFFea2a33);
+  final _currentUser = FirebaseAuth.instance.currentUser;
 
   @override
   Widget build(BuildContext context) {
@@ -23,9 +24,7 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
         elevation: 1,
         leading: IconButton(
           icon: const Icon(Icons.menu, color: Colors.black87),
-          onPressed: () {
-            /* TODO: Handle drawer */
-          },
+          onPressed: () {},
         ),
         title: Text(
           'Dashboard',
@@ -43,7 +42,7 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Welcome back, Alex!',
+              'Welcome back, ${_currentUser?.displayName?.split(' ').first ?? 'User'}!',
               style: GoogleFonts.splineSans(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,

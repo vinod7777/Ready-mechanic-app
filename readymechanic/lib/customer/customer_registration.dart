@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -12,12 +14,47 @@ class CustomerRegistrationScreen extends StatefulWidget {
 
 class _CustomerRegistrationScreenState
     extends State<CustomerRegistrationScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _auth = FirebaseAuth.instance;
+  final _firestore = FirebaseFirestore.instance;
+
+  // Text Editing Controllers
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _pincodeController = TextEditingController();
+
+  bool _isLoading = false;
+
   final _primaryColor = const Color(0xFFea2a33);
   final _neutral100 = const Color(0xFFfcf8f8);
   final _neutral200 = const Color(0xFFf3e7e8);
   final _neutral400 = const Color(0xFF994d51);
   final _neutral900 = const Color(0xFF1b0e0e);
   final _blue600 = const Color(0xFF2563EB); // From button and links
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _addressController.dispose();
+    _cityController.dispose();
+    _pincodeController.dispose();
+    super.dispose();
+  }
+
+  // Validator for non-empty fields
+  String? _validateNonEmpty(String? value, String fieldName) =>
+      value == null || value.trim().isEmpty
+      ? 'Please enter your $fieldName'
+      : null;
 
   @override
   Widget build(BuildContext context) {
@@ -42,79 +79,116 @@ class _CustomerRegistrationScreenState
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        child: Column(
-          children: [
-            _buildTextField(
-              icon: Icons.person_outline,
-              placeholder: 'Full Name',
-            ),
-            _buildTextField(
-              icon: Icons.email_outlined,
-              placeholder: 'Email',
-              keyboardType: TextInputType.emailAddress,
-            ),
-            _buildTextField(
-              icon: Icons.phone_outlined,
-              placeholder: 'Phone',
-              keyboardType: TextInputType.phone,
-            ),
-            _buildTextField(
-              icon: Icons.lock_outline,
-              placeholder: 'Password',
-              obscureText: true,
-            ),
-            _buildTextField(
-              icon: Icons.lock_outline,
-              placeholder: 'Confirm Password',
-              obscureText: true,
-            ),
-            _buildTextField(icon: Icons.home_outlined, placeholder: 'Address'),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildTextField(
-                    icon: Icons.location_city_outlined,
-                    placeholder: 'City',
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildTextField(
-                    icon: Icons.pin_drop_outlined,
-                    placeholder: 'Pincode',
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pushNamedAndRemoveUntil(
-                  '/login',
-                  (Route<dynamic> route) => false,
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _blue600,
-                minimumSize: const Size(double.infinity, 52),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(26),
-                ),
-                elevation: 5,
-                shadowColor: _blue600.withAlpha((255 * 0.4).round()),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              _buildTextField(
+                controller: _nameController,
+                icon: Icons.person_outline,
+                placeholder: 'Full Name',
+                validator: (v) => _validateNonEmpty(v, 'full name'),
               ),
-              child: Text(
-                'Register',
-                style: GoogleFonts.splineSans(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+              _buildTextField(
+                controller: _emailController,
+                icon: Icons.email_outlined,
+                placeholder: 'Email',
+                keyboardType: TextInputType.emailAddress,
+                validator: (v) {
+                  if (v == null || !v.contains('@')) {
+                    return 'Please enter a valid email';
+                  }
+                  return null;
+                },
               ),
-            ),
-            const SizedBox(height: 24),
-            _buildTermsAndPolicyText(),
-          ],
+              _buildTextField(
+                controller: _phoneController,
+                icon: Icons.phone_outlined,
+                placeholder: 'Phone',
+                keyboardType: TextInputType.phone,
+                validator: (v) => _validateNonEmpty(v, 'phone number'),
+              ),
+              _buildTextField(
+                controller: _passwordController,
+                icon: Icons.lock_outline,
+                placeholder: 'Password',
+                obscureText: true,
+                validator: (v) {
+                  if (v == null || v.length < 6) {
+                    return 'Password must be at least 6 characters';
+                  }
+                  return null;
+                },
+              ),
+              _buildTextField(
+                controller: _confirmPasswordController,
+                icon: Icons.lock_outline,
+                placeholder: 'Confirm Password',
+                obscureText: true,
+                validator: (v) {
+                  if (v != _passwordController.text) {
+                    return 'Passwords do not match';
+                  }
+                  return null;
+                },
+              ),
+              _buildTextField(
+                controller: _addressController,
+                icon: Icons.home_outlined,
+                placeholder: 'Address',
+                validator: (v) => _validateNonEmpty(v, 'address'),
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildTextField(
+                      controller: _cityController,
+                      icon: Icons.location_city_outlined,
+                      placeholder: 'City',
+                      validator: (v) => _validateNonEmpty(v, 'city'),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildTextField(
+                      controller: _pincodeController,
+                      icon: Icons.pin_drop_outlined,
+                      placeholder: 'Pincode',
+                      keyboardType: TextInputType.number,
+                      validator: (v) => _validateNonEmpty(v, 'pincode'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _registerCustomer,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _blue600,
+                  minimumSize: const Size(double.infinity, 52),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(26),
+                  ),
+                  elevation: 5,
+                  shadowColor: _blue600.withAlpha((255 * 0.4).round()),
+                ),
+                child: _isLoading
+                    ? const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      )
+                    : Text(
+                        'Register',
+                        style: GoogleFonts.splineSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+              ),
+              const SizedBox(height: 24),
+              _buildTermsAndPolicyText(),
+            ],
+          ),
         ),
       ),
     );
@@ -123,12 +197,16 @@ class _CustomerRegistrationScreenState
   Widget _buildTextField({
     required IconData icon,
     required String placeholder,
+    TextEditingController? controller,
+    String? Function(String?)? validator,
     bool obscureText = false,
     TextInputType? keyboardType,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: TextField(
+      child: TextFormField(
+        controller: controller,
+        validator: validator,
         obscureText: obscureText,
         keyboardType: keyboardType,
         style: GoogleFonts.splineSans(color: _neutral900),
@@ -154,6 +232,67 @@ class _CustomerRegistrationScreenState
         ),
       ),
     );
+  }
+
+  Future<void> _registerCustomer() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      // 1. Create user in Firebase Auth
+      final userCredential = await _auth.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      // 2. Save customer details to Firestore
+      if (userCredential.user != null) {
+        final uid = userCredential.user!.uid;
+        await _firestore.collection('customers').doc(uid).set({
+          'uid': uid,
+          'fullName': _nameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'phone': _phoneController.text.trim(),
+          'address': _addressController.text.trim(),
+          'city': _cityController.text.trim(),
+          'pincode': _pincodeController.text.trim(),
+          'photoURL': null,
+          'userType': 'customer',
+          'isActive': true,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Registration successful! Please log in.'),
+            ),
+          );
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/login', (route) => false);
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'An error occurred.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('An unexpected error occurred: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   Widget _buildTermsAndPolicyText() {

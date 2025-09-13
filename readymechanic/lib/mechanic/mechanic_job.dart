@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:readymechanic/mechanic/mechanic_job_details.dart';
@@ -16,33 +18,6 @@ class _MechanicJobScreenState extends State<MechanicJobScreen> {
   final Color _backgroundColor = Colors.grey[50]!;
   final Color _textPrimary = Colors.grey[800]!;
   final Color _textSecondary = Colors.grey[600]!;
-
-  final List<Map<String, dynamic>> _jobs = [
-    {
-      'name': 'Sophia Carter',
-      'service': 'Oil Change',
-      'location': '123 Maple St, Anytown, USA',
-      'status': JobStatus.accepted,
-      'image':
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuDR2o_FLQ9OPwVoHI4ryDtAejW8k2q96qzEvY6l7jOkNSWlVjy9rqeUDBBCsWgOYDLdcDKMLx_LZVRZe2AcHVT55SNtCjtSfXDF_pMd1vK7ac_1_U75m6tQt6DPQwGLWR6NOnutAMMHExOjbiMLgvDGOonwQZCZ_3yaaDAyNDb1Z7W2ZB4Wsj24BtDoj29Th0-vWg53mQ88uEnZp7tJ5YL-NtlllY5thLIW4hiMpEJ9uL1eIT_HAlo5pDN05cJfNDUDUWEKOfk0-FE',
-    },
-    {
-      'name': 'Jane Smith',
-      'service': 'Tire Rotation',
-      'location': '456 Oak Ave, Sometown, USA',
-      'status': JobStatus.inProgress,
-      'image':
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuAQZyTUZj_5aHq5eM_D8Bhr0K_zifZdcgKcJWv4h0ZwhLACgKGRAxkfXcSY3xGBh41Yzz9vSW3Bh8UOAuP6GLiPPcGWurO44B4pLIjz4-VZkA6K-w0lbtrRz4pvXn6-2y3rv2CXD0tTvz02LpVmvQKTJ34xkWtB1sETd9w0ZL_KGcpe99WcMuxijat_6r-hbBwhnTyARuXMVvr3C2CXD0tTvz02LpVmvQKTJ34xkWtB1sETd9w0ZL_KGcpe99WcMuxijat_6r-hbBwhnTyARuXMVvr3C4xBEqmUmnRiitD7kofmD4SXN_h0KOJnPfUx2zoGugkbKQpTY4szauO8Q_gvCaM',
-    },
-    {
-      'name': 'Mike Johnson',
-      'service': 'Brake Repair',
-      'location': '789 Pine Ln, Othertown, USA',
-      'status': JobStatus.completed,
-      'image':
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuCXHm9DDZHrl5jqSN9nPuLy3sqU48BjDHUKl8UQZ8WhBb3ULW7RnCukmlBZuxKM9htqa10-cDTJCOlAtVNs9p_RhnKw8mkdjfOUFhsINf-rQ3EbYOZ-cBOI3kCxByFkIrWRb2n-_V5U7IeTKEvb03mpaFZPqPwR5aQkOSRK6vZxqRarjFpEQFxXhaRQOTCF39yVgBuxPW8hf2hmIktKZ-VIsjBgW0ED8BDU_lPi3OXbPautlZ9M4-Qkhe2CwMdengFsJJoLN3378Go',
-    },
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -70,12 +45,33 @@ class _MechanicJobScreenState extends State<MechanicJobScreen> {
           ),
         ],
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemCount: _jobs.length,
-        itemBuilder: (context, index) {
-          final job = _jobs[index];
-          return _buildJobCard(job);
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('bookings')
+            .where(
+              'mechanicId',
+              isEqualTo: FirebaseAuth.instance.currentUser?.uid,
+            )
+            .where('status', whereIn: ['accepted', 'inprogress', 'completed'])
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text('No jobs found.'));
+          }
+          final jobs = snapshot.data!.docs;
+          return ListView.builder(
+            padding: const EdgeInsets.all(16.0),
+            itemCount: jobs.length,
+            itemBuilder: (context, index) {
+              return _buildJobCard(jobs[index].data() as Map<String, dynamic>);
+            },
+          );
         },
       ),
     );
@@ -103,7 +99,17 @@ class _MechanicJobScreenState extends State<MechanicJobScreen> {
             children: [
               CircleAvatar(
                 radius: 28,
-                backgroundImage: NetworkImage(job['image']),
+                backgroundColor: Colors.grey[200],
+                backgroundImage:
+                    (job['customerImage'] != null &&
+                        job['customerImage'].isNotEmpty)
+                    ? NetworkImage(job['customerImage'])
+                    : null,
+                child:
+                    (job['customerImage'] == null ||
+                        job['customerImage'].isEmpty)
+                    ? Icon(Icons.person, color: Colors.grey[400])
+                    : null,
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -111,7 +117,7 @@ class _MechanicJobScreenState extends State<MechanicJobScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      job['name'],
+                      job['customerName'] ?? 'N/A',
                       style: GoogleFonts.spaceGrotesk(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -120,7 +126,7 @@ class _MechanicJobScreenState extends State<MechanicJobScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      job['service'],
+                      job['service'] ?? 'N/A',
                       style: GoogleFonts.spaceGrotesk(
                         color: _textSecondary,
                         fontSize: 14,
@@ -128,7 +134,7 @@ class _MechanicJobScreenState extends State<MechanicJobScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      job['location'],
+                      job['address'] ?? 'N/A',
                       style: GoogleFonts.spaceGrotesk(
                         color: _textSecondary,
                         fontSize: 12,
@@ -142,7 +148,7 @@ class _MechanicJobScreenState extends State<MechanicJobScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  _getStatusBadge(job['status']),
+                  _getStatusBadgeFromString(job['status']),
                   const SizedBox(height: 16),
                   Icon(Icons.chevron_right, color: _textSecondary),
                 ],
@@ -154,7 +160,21 @@ class _MechanicJobScreenState extends State<MechanicJobScreen> {
     );
   }
 
-  Widget _getStatusBadge(JobStatus status) {
+  Widget _getStatusBadgeFromString(String? statusStr) {
+    JobStatus status;
+    switch (statusStr?.toLowerCase()) {
+      case 'accepted':
+        status = JobStatus.accepted;
+        break;
+      case 'inprogress':
+        status = JobStatus.inProgress;
+        break;
+      case 'completed':
+        status = JobStatus.completed;
+        break;
+      default:
+        status = JobStatus.accepted;
+    }
     Color color;
     String text;
     Color textColor;
@@ -166,9 +186,9 @@ class _MechanicJobScreenState extends State<MechanicJobScreen> {
         textColor = Colors.blue[800]!;
         break;
       case JobStatus.inProgress:
-        color = Colors.amber[100]!;
+        color = Colors.indigo[100]!;
         text = 'In-Progress';
-        textColor = Colors.amber[800]!;
+        textColor = Colors.indigo[800]!;
         break;
       case JobStatus.completed:
         color = Colors.green[100]!;

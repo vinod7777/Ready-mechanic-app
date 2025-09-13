@@ -1,12 +1,19 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class MechanicJobDetailsScreen extends StatelessWidget {
+class MechanicJobDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> job;
 
   const MechanicJobDetailsScreen({super.key, required this.job});
 
-  // Consistent colors from other mechanic screens
+  @override
+  State<MechanicJobDetailsScreen> createState() =>
+      _MechanicJobDetailsScreenState();
+}
+
+class _MechanicJobDetailsScreenState extends State<MechanicJobDetailsScreen> {
+  // Consistent colors
   final Color _primaryColor = const Color(0xFFea2a33);
   final Color _backgroundColor = const Color(0xFFf7f8fa); // bg-gray-50
   final Color _textPrimary = const Color(0xFF1a1a1a); // text-gray-900
@@ -65,6 +72,7 @@ class MechanicJobDetailsScreen extends StatelessWidget {
   }
 
   Widget _buildCustomerDetailsCard() {
+    final vehicle = widget.job['vehicle'] as Map<String, dynamic>? ?? {};
     return Card(
       elevation: 2,
       shadowColor: Colors.black.withAlpha((255 * 0.05).round()),
@@ -77,14 +85,24 @@ class MechanicJobDetailsScreen extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 32,
-                  backgroundImage: NetworkImage(job['image']),
+                  backgroundColor: Colors.grey[200],
+                  backgroundImage:
+                      (widget.job['customerImage'] != null &&
+                          widget.job['customerImage'].isNotEmpty)
+                      ? NetworkImage(widget.job['customerImage'])
+                      : null,
+                  child:
+                      (widget.job['customerImage'] == null ||
+                          widget.job['customerImage'].isEmpty)
+                      ? Icon(Icons.person, color: Colors.grey[400], size: 32)
+                      : null,
                 ),
                 const SizedBox(width: 16),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      job['name'],
+                      widget.job['customerName'] ?? 'N/A',
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -92,7 +110,7 @@ class MechanicJobDetailsScreen extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Toyota Camry', // Placeholder vehicle
+                      '${vehicle['make'] ?? ''} ${vehicle['model'] ?? ''}',
                       style: GoogleFonts.spaceGrotesk(color: _textSecondary),
                     ),
                   ],
@@ -100,13 +118,25 @@ class MechanicJobDetailsScreen extends StatelessWidget {
               ],
             ),
             const Divider(height: 32),
-            _buildDetailRow(Icons.location_on, 'Location', job['location']),
+            _buildDetailRow(
+              Icons.location_on,
+              'Location',
+              widget.job['address'] ?? 'N/A',
+            ),
             _buildDetailRow(
               Icons.schedule,
               'Scheduled Time',
-              '9:00 AM - 10:00 AM',
+              (widget.job['createdAt'] as Timestamp?)
+                      ?.toDate()
+                      .toString()
+                      .substring(0, 16) ??
+                  'N/A',
             ),
-            _buildDetailRow(Icons.build, 'Service', job['service']),
+            _buildDetailRow(
+              Icons.build,
+              'Service',
+              widget.job['service'] ?? 'N/A',
+            ),
           ],
         ),
       ),
@@ -180,7 +210,7 @@ class MechanicJobDetailsScreen extends StatelessWidget {
               ],
             ),
             Text(
-              '\$50.00', // Placeholder price
+              '₹${widget.job['serviceCost'] ?? 0}',
               style: GoogleFonts.spaceGrotesk(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -194,8 +224,15 @@ class MechanicJobDetailsScreen extends StatelessWidget {
   }
 
   Widget _buildFooterButtons() {
+    final status = (widget.job['status'] as String?)?.toLowerCase();
     return Container(
-      padding: const EdgeInsets.all(16.0),
+      // Wrap with a container
+      padding: const EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        24,
+      ), // Adjust padding for safe area
       decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -206,35 +243,82 @@ class MechanicJobDetailsScreen extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ElevatedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.navigation),
-            label: const Text('Navigate to Customer'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _primaryColor,
-              foregroundColor: Colors.white,
-              minimumSize: const Size(double.infinity, 48),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+      child: SafeArea(
+        // Use SafeArea to avoid system intrusions
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ElevatedButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.navigation),
+              label: const Text('Navigate to Customer'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primaryColor,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
+            const SizedBox(height: 8),
+            ElevatedButton.icon(
+              onPressed: status == 'accepted' ? () => _showOtpDialog() : null,
+              icon: const Icon(Icons.play_arrow),
+              label: const Text('Start Service'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primaryColor.withAlpha((255 * 0.1).round()),
+                foregroundColor: _primaryColor,
+                minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                disabledBackgroundColor: Colors.grey[200],
+                disabledForegroundColor: Colors.grey[500],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showOtpDialog() {
+    final otpController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Enter Service OTP'),
+        content: TextField(
+          controller: otpController,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            hintText: 'Enter OTP from customer',
           ),
-          const SizedBox(height: 8),
-          ElevatedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.play_arrow),
-            label: const Text('Start Service'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _primaryColor.withAlpha((255 * 0.1).round()),
-              foregroundColor: _primaryColor,
-              minimumSize: const Size(double.infinity, 48),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (otpController.text == widget.job['serviceStartOTP']) {
+                FirebaseFirestore.instance
+                    .collection('bookings')
+                    .doc(widget.job['bookingId']) // Use the passed bookingId
+                    .update({'status': 'inprogress'});
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Service Started!')),
+                );
+              } else {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('Invalid OTP.')));
+              }
+            },
+            child: const Text('Verify & Start'),
           ),
         ],
       ),

@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:readymechanic/mechanic/mechanic_dashboard.dart';
@@ -14,45 +16,6 @@ class _MechanicRequestScreenState extends State<MechanicRequestScreen> {
   final Color _backgroundColor = Colors.grey[50]!;
   final Color _textPrimary = Colors.grey[800]!;
   final Color _textSecondary = Colors.grey[600]!;
-
-  final List<Map<String, dynamic>> _requests = [
-    {
-      'name': 'Sophia Carter',
-      'vehicle': '2021 Toyota Camry',
-      'service': 'Oil Change',
-      'location': '123 Maple St, Anytown',
-      'distance': '5.2 miles away',
-      'image':
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuDR2o_FLQ9OPwVoHI4ryDtAejW8k2q96qzEvY6l7jOkNSWlVjy9rqeUDBBCsWgOYDLdcDKMLx_LZVRZe2AcHVT55SNtCjtSfXDF_pMd1vK7ac_1_U75m6tQt6DPQwGLWR6NOnutAMMHExOjbiMLgvDGOonwQZCZ_3yaaDAyNDb1Z7W2ZB4Wsj24BtDoj29Th0-vWg53mQ88uEnZp7tJ5YL-NtlllY5thLIW4hiMpEJ9uL1eIT_HAlo5pDN05cJfNDUDUWEKOfk0-FE',
-    },
-    {
-      'name': 'Ethan Harper',
-      'vehicle': '2018 Honda Civic',
-      'service': 'Tire Rotation',
-      'location': '456 Oak Ave, Anytown',
-      'distance': '8.1 miles away',
-      'image':
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuCEWFy_9Bq5W3L7kOT-B8OqH-fMbKAHG6_zA_4BjqEYAiM1EDsOWh9EZ63WoFyr3s_itT97j98HDQPd-kOg2ToS1DzU7V4Ng9RJkFYYEC355LRatDLROdySNHANco0XzVZGAJj5nqYJ5RS4FYynHPo6QxgRXI8Ewr_j8T8nJprPcDj0yA-lPsNIBwUwcXuu0C7blqzoQCxQuPSYNHrz38m4AHSimQCO8L9mRtvlqzDHB4OgbX6SW1yj8SAyO_oPmsLXs8Z8SzKIdjs',
-    },
-    {
-      'name': 'Olivia Bennett',
-      'vehicle': '2020 Ford F-150',
-      'service': 'Brake Repair',
-      'location': '789 Pine Rd, Anytown',
-      'distance': '12.5 miles away',
-      'image':
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuDzbhe_v04mFFsS6jwxvelcDSVPKnVYXiHhs-JvwSy4n2Jcs3EBI5WqW997-nbiW2WTA3cKaWCNwiuu3WrZJO1928vMsBXubQetRGq7F0xKew7DG8vlFav5XvC_WI3CJvqRJrz3k9iNQ5UJKMqHdeqYIP_F5oWHy9atFdSZHo3s4BhZhjx8Ru-MSk4zDMN5022b3hcCcrOSiyknbD02SHG_hY2sKh7-y1NVlgLN6LwkxYCjqKROszD2Fh5cwFeHmBwJQiB1-lGMPmo',
-    },
-    {
-      'name': 'Noah Foster',
-      'vehicle': '2019 Chevrolet Malibu',
-      'service': 'Battery Replacement',
-      'location': '321 Birch Ln, Anytown',
-      'distance': '3.4 miles away',
-      'image':
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuCrIoT-pErhid05EdRdTlspATjYWSr7HHt8pZfmUfI1QPxpZ-sKPkngUGRUAZs43MZNnbOwFTkaBCWoogMGzhXBMtprREFaettcSaZZVK9ER2HnKhqr38BHH0gmWOMv-iNRoqrWJM8i67deyK5_bTU7DgqBqzR6YuWESMM7Qo_5OvJ7ZaHocdXA6yqQMLoZ4v7FQyF47f2uq5d3XTonGXJYK6KzAKNCNFrroOF5G9dJH8rmPStdq5Hw_w9-JbRfyu1KRYlyTFO6F3s',
-    },
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -82,22 +45,39 @@ class _MechanicRequestScreenState extends State<MechanicRequestScreen> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _requests.length,
-              itemBuilder: (context, index) {
-                final request = _requests[index];
-                return _buildRequestCard(request);
-              },
-            ),
-          ], // This was missing a closing parenthesis
-        ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('bookings')
+            .where(
+              'mechanicId',
+              isEqualTo: FirebaseAuth.instance.currentUser?.uid,
+            )
+            .where('status', isEqualTo: 'pending')
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text('No new requests.'));
+          }
+
+          final requests = snapshot.data!.docs;
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16.0),
+            itemCount: requests.length,
+            itemBuilder: (context, index) {
+              final requestDoc = requests[index];
+              final requestData = requestDoc.data() as Map<String, dynamic>;
+              requestData['id'] = requestDoc.id;
+              return _buildRequestCard(requestData);
+            },
+          );
+        },
       ),
     );
   }
@@ -128,7 +108,7 @@ class _MechanicRequestScreenState extends State<MechanicRequestScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      request['name'],
+                      request['customerName'] ?? 'N/A',
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -136,10 +116,16 @@ class _MechanicRequestScreenState extends State<MechanicRequestScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    _buildInfoRow(Icons.directions_car, request['vehicle']),
-                    _buildInfoRow(Icons.build, request['service']),
-                    _buildInfoRow(Icons.location_on, request['location']),
-                    _buildInfoRow(Icons.social_distance, request['distance']),
+                    _buildInfoRow(
+                      Icons.directions_car,
+                      '${request['vehicle']?['make'] ?? ''} ${request['vehicle']?['model'] ?? ''}',
+                    ),
+                    _buildInfoRow(Icons.build, request['service'] ?? 'N/A'),
+                    _buildInfoRow(
+                      Icons.location_on,
+                      request['address'] ?? 'N/A',
+                    ),
+                    // _buildInfoRow(Icons.social_distance, request['distance']),
                   ],
                 ),
               ),
@@ -149,11 +135,21 @@ class _MechanicRequestScreenState extends State<MechanicRequestScreen> {
                 height: 96,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
-                  image: DecorationImage(
-                    image: NetworkImage(request['image']),
-                    fit: BoxFit.cover,
-                  ),
+                  color: Colors.grey[200],
+                  image:
+                      (request['customerImage'] != null &&
+                          request['customerImage'].isNotEmpty)
+                      ? DecorationImage(
+                          image: NetworkImage(request['customerImage']),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
                 ),
+                child:
+                    (request['customerImage'] == null ||
+                        request['customerImage'].isEmpty)
+                    ? Icon(Icons.person, color: Colors.grey[400], size: 48)
+                    : null,
               ),
             ],
           ),
@@ -163,9 +159,8 @@ class _MechanicRequestScreenState extends State<MechanicRequestScreen> {
             children: [
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
-                    // TODO: Handle Reject
-                  },
+                  onPressed: () =>
+                      _updateBookingStatus(request['id'], 'rejected'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red[600],
                     foregroundColor: Colors.white,
@@ -186,9 +181,8 @@ class _MechanicRequestScreenState extends State<MechanicRequestScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
-                    // TODO: Handle Accept
-                  },
+                  onPressed: () =>
+                      _updateBookingStatus(request['id'], 'accepted'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue[600],
                     foregroundColor: Colors.white,
@@ -230,5 +224,12 @@ class _MechanicRequestScreenState extends State<MechanicRequestScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _updateBookingStatus(String bookingId, String status) async {
+    await FirebaseFirestore.instance
+        .collection('bookings')
+        .doc(bookingId)
+        .update({'status': status});
   }
 }

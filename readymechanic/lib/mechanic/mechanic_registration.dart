@@ -366,19 +366,26 @@ class _MechanicRegistrationScreenState
             .collection('mechanics')
             .doc(userCredential.user!.uid)
             .set({
-              'name': _nameController.text.trim(),
+              'uid': userCredential.user!.uid,
+              'fullName': _nameController.text.trim(),
               'email': _emailController.text.trim(),
               'phone': _phoneController.text.trim(),
               'address': _addressController.text.trim(),
               'experience': _experienceController.text.trim(),
               'skills': _skillsController.text.trim(),
-              'vehicleTypeServiced': _selectedVehicleType,
+              'vehicleTypes': _selectedVehicleType != null
+                  ? [_selectedVehicleType]
+                  : [],
               'licenseNumber': _licenseController.text.trim(),
               'aadharNumber': _aadharController.text.trim(),
-              'bankAccountName': _accountNameController.text.trim(),
-              'bankAccountNumber': _accountNumberController.text.trim(),
+              'bankAccount': _accountNumberController.text.trim(),
               'ifscCode': _ifscController.text.trim(),
-              'role': 'mechanic',
+              'userType': 'mechanic',
+              'status': 'pending_verification',
+              'isActive': false,
+              'totalEarnings': 0,
+              'totalJobs': 0,
+              'photoURL': null,
               'createdAt': FieldValue.serverTimestamp(),
             });
 

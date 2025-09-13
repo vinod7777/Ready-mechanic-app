@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -14,6 +16,8 @@ class _MechanicProfileScreenState extends State<MechanicProfileScreen> {
   final Color _backgroundColor = Colors.grey[50]!;
   final Color _textPrimary = Colors.grey[800]!;
   final Color _textSecondary = Colors.grey[600]!;
+  final _auth = FirebaseAuth.instance;
+  final _firestore = FirebaseFirestore.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -33,80 +37,125 @@ class _MechanicProfileScreenState extends State<MechanicProfileScreen> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            CircleAvatar(
-              radius: 60,
-              backgroundImage: NetworkImage(
-                'https://lh3.googleusercontent.com/aida-public/AB6AXuCsg4zDkeUElHy-SojE5jk3Rdk_q29Qb7EtDNi0aMTZUVsSbOlU25XEH1pwO0RKpCRxpOt_QUe4RFF-C7OGddrImww6LIVTx1UYXQ3p378XI3N1QmUvC84VLINaQGfW7Ahptl8aMWoNFd64zbAw8zfCH48_7jFWvc3HifPOe_Py2g7N0LcgRsEqkJDGfAr_NX4iCctGEt9qwU0QurC3IJ4TrSbXTmtF7Eb1l3at4SAK7nFkk_WAZ82TMkP235eDCy3s9eBelAHxfjg',
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Ethan Carter',
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: _textPrimary,
-              ),
-            ),
-            Text(
-              'Mechanic',
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 16,
-                color: _textSecondary,
-              ),
-            ),
-            const SizedBox(height: 32),
-            _buildSectionTitle('Professional Details'),
-            _buildTextField(label: 'Name', value: 'Ethan Carter'),
-            _buildTextField(label: 'Email', value: 'ethan.carter@example.com'),
-            _buildTextField(label: 'Phone', value: '+1 123 456 7890'),
-            _buildTextField(
-              label: 'Address',
-              value: '123 Main St, Anytown, USA',
-            ),
-            _buildTextField(label: 'License Number', value: 'MC12345678'),
-            const SizedBox(height: 24),
-            _buildSectionTitle('Bank Details'),
-            _buildTextField(
-              label: 'Account Number',
-              value: '**** **** **** 1234',
-            ),
-            _buildTextField(label: 'Routing Number', value: '*********'),
-            const SizedBox(height: 32),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: TextButton(
-                onPressed: () {
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    '/login',
-                    (Route<dynamic> route) => false,
-                  );
-                },
-                style: TextButton.styleFrom(
-                  backgroundColor: _primaryColor.withAlpha((255 * 0.1).round()),
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: _auth.currentUser != null
+            ? _firestore
+                  .collection('mechanics')
+                  .doc(_auth.currentUser!.uid)
+                  .snapshots()
+            : null,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return const Center(child: Text('Mechanic data not found.'));
+          }
+
+          final mechanicData = snapshot.data!.data() as Map<String, dynamic>;
+          final photoURL = mechanicData['photoURL'] as String?;
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 60,
+                  backgroundColor: Colors.grey[200],
+                  backgroundImage: (photoURL != null && photoURL.isNotEmpty)
+                      ? NetworkImage(photoURL)
+                      : null,
+                  child: (photoURL == null || photoURL.isEmpty)
+                      ? Icon(Icons.person, size: 60, color: Colors.grey[400])
+                      : null,
                 ),
-                child: Text(
-                  'Logout',
+                const SizedBox(height: 16),
+                Text(
+                  mechanicData['fullName'] ?? 'N/A',
                   style: GoogleFonts.spaceGrotesk(
-                    color: _primaryColor,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    color: _textPrimary,
                   ),
                 ),
-              ),
+                Text(
+                  'Mechanic',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 16,
+                    color: _textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                _buildSectionTitle('Professional Details'),
+                _buildTextField(
+                  label: 'Name',
+                  value: mechanicData['fullName'] ?? '',
+                ),
+                _buildTextField(
+                  label: 'Email',
+                  value: mechanicData['email'] ?? '',
+                ),
+                _buildTextField(
+                  label: 'Phone',
+                  value: mechanicData['phone'] ?? '',
+                ),
+                _buildTextField(
+                  label: 'Address',
+                  value: mechanicData['address'] ?? '',
+                ),
+                _buildTextField(
+                  label: 'License Number',
+                  value: mechanicData['licenseNumber'] ?? '',
+                ),
+                const SizedBox(height: 24),
+                _buildSectionTitle('Bank Details'),
+                _buildTextField(
+                  label: 'Account Number',
+                  value:
+                      '**** **** **** ${mechanicData['bankAccount']?.substring(mechanicData['bankAccount'].length - 4)}',
+                ),
+                _buildTextField(
+                  label: 'IFSC Code',
+                  value: mechanicData['ifscCode'] ?? '',
+                ),
+                const SizedBox(height: 32),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: TextButton(
+                    onPressed: () async {
+                      await _auth.signOut();
+                      if (mounted) {
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          '/login',
+                          (Route<dynamic> route) => false,
+                        );
+                      }
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: _primaryColor.withAlpha(
+                        (255 * 0.1).round(),
+                      ),
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: Text(
+                      'Logout',
+                      style: GoogleFonts.spaceGrotesk(
+                        color: _primaryColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

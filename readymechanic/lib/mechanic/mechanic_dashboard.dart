@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -17,6 +19,7 @@ class _MechanicDashboardScreenState extends State<MechanicDashboardScreen> {
   final Color _textSecondary = Colors.grey[600]!;
   final Color _amber400 = const Color(0xFFfbbf24);
   final Color _emerald400 = const Color(0xFF34d399);
+  final _currentUser = FirebaseAuth.instance.currentUser;
 
   @override
   Widget build(BuildContext context) {
@@ -54,8 +57,34 @@ class _MechanicDashboardScreenState extends State<MechanicDashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildWelcomeHeader(),
+            const SizedBox(height: 32),
+            _buildStats(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWelcomeHeader() {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: _currentUser != null
+          ? FirebaseFirestore.instance
+                .collection('mechanics')
+                .doc(_currentUser.uid)
+                .snapshots()
+          : null,
+      builder: (context, snapshot) {
+        final name = snapshot.hasData
+            ? (snapshot.data!.data() as Map<String, dynamic>)['fullName']
+                      ?.split(' ')[0] ??
+                  'Mechanic'
+            : 'Mechanic';
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Text(
-              'Welcome back, Alex!',
+              'Welcome back, $name!',
               style: GoogleFonts.spaceGrotesk(
                 fontSize: 30,
                 fontWeight: FontWeight.bold,
@@ -70,35 +99,64 @@ class _MechanicDashboardScreenState extends State<MechanicDashboardScreen> {
                 color: _textSecondary,
               ),
             ),
-            const SizedBox(height: 32),
-            Column(
-              children: [
-                _buildStatCard(
-                  icon: Icons.pending,
-                  iconColor: _primaryColor,
-                  title: 'Pending Requests',
-                  value: '3',
-                ),
-                const SizedBox(height: 16),
-                _buildStatCard(
-                  icon: Icons.construction,
-                  iconColor: _amber400,
-                  title: 'Active Jobs',
-                  value: '2',
-                ),
-                const SizedBox(height: 16),
-                _buildStatCard(
-                  icon: Icons.task_alt,
-                  iconColor: _emerald400,
-                  title: 'Completed Jobs Today',
-                  value: '5',
-                  isLarge: true,
-                ),
-              ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildStats() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _currentUser != null
+          ? FirebaseFirestore.instance
+                .collection('bookings')
+                .where('mechanicId', isEqualTo: _currentUser.uid)
+                .snapshots()
+          : null,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final bookings = snapshot.data!.docs;
+        final pending = bookings
+            .where((doc) => doc['status'] == 'pending')
+            .length;
+        final active = bookings
+            .where(
+              (doc) =>
+                  doc['status'] == 'accepted' || doc['status'] == 'inprogress',
+            )
+            .length;
+        final completed = bookings
+            .where((doc) => doc['status'] == 'completed')
+            .length;
+
+        return Column(
+          children: [
+            _buildStatCard(
+              icon: Icons.pending,
+              iconColor: _primaryColor,
+              title: 'Pending Requests',
+              value: pending.toString(),
+            ),
+            const SizedBox(height: 16),
+            _buildStatCard(
+              icon: Icons.construction,
+              iconColor: _amber400,
+              title: 'Active Jobs',
+              value: active.toString(),
+            ),
+            const SizedBox(height: 16),
+            _buildStatCard(
+              icon: Icons.task_alt,
+              iconColor: _emerald400,
+              title: 'Completed Jobs',
+              value: completed.toString(),
+              isLarge: true,
             ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 

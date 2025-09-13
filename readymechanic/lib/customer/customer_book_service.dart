@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:readymechanic/customer/customer_location.dart';
@@ -13,14 +15,10 @@ class CustomerBookServiceScreen extends StatefulWidget {
 class _CustomerBookServiceScreenState extends State<CustomerBookServiceScreen> {
   final _primaryColor = const Color(0xFFea2a33);
 
-  String? _selectedVehicle;
+  Map<String, dynamic>? _selectedVehicle;
   String? _selectedService;
-
-  final List<String> _vehicles = [
-    'Toyota Camry - 2021',
-    'Honda Civic - 2022',
-    'Ford F-150 - 2020',
-  ];
+  List<Map<String, dynamic>> _vehicles = [];
+  bool _isLoadingVehicles = true;
 
   final List<Map<String, dynamic>> _services = [
     {
@@ -42,6 +40,43 @@ class _CustomerBookServiceScreenState extends State<CustomerBookServiceScreen> {
     {'name': 'Engine Diagnostics', 'icon': Icons.build, 'price': 799},
     {'name': 'Starting Problems', 'icon': Icons.car_repair, 'price': 599},
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchVehicles();
+  }
+
+  Future<void> _fetchVehicles() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() => _isLoadingVehicles = false);
+      return;
+    }
+
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('customers')
+          .doc(user.uid)
+          .collection('vehicles')
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      final vehicles = snapshot.docs.map((doc) {
+        return {'id': doc.id, ...doc.data()};
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          _vehicles = vehicles;
+          _isLoadingVehicles = false;
+        });
+      }
+    } catch (e) {
+      // Handle error, maybe show a snackbar
+      if (mounted) setState(() => _isLoadingVehicles = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -109,7 +144,8 @@ class _CustomerBookServiceScreenState extends State<CustomerBookServiceScreen> {
                         MaterialPageRoute(
                           builder: (context) => CustomerLocationScreen(
                             // This is the area with the error
-                            vehicle: _selectedVehicle!, // This line is correct
+                            vehicle:
+                                '${_selectedVehicle!['make']} - ${_selectedVehicle!['model']}',
                             serviceName:
                                 selectedServiceData?['name'] ??
                                 '', // This line is correct
@@ -159,28 +195,48 @@ class _CustomerBookServiceScreenState extends State<CustomerBookServiceScreen> {
           ),
         ],
       ),
-      child: DropdownButtonFormField<String>(
-        value: _selectedVehicle,
-        hint: Text(
-          'Select Vehicle',
-          style: GoogleFonts.splineSans(color: Colors.grey[500]),
-        ),
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        ),
-        icon: const Icon(Icons.unfold_more, color: Colors.grey),
-        isExpanded: true,
-        style: GoogleFonts.splineSans(color: Colors.grey[800], fontSize: 16),
-        onChanged: (String? newValue) {
-          setState(() {
-            _selectedVehicle = newValue;
-          });
-        },
-        items: _vehicles.map<DropdownMenuItem<String>>((String value) {
-          return DropdownMenuItem<String>(value: value, child: Text(value));
-        }).toList(),
-      ),
+      child: _isLoadingVehicles
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          : DropdownButtonFormField<Map<String, dynamic>>(
+              value: _selectedVehicle,
+              hint: Text(
+                'Select Vehicle',
+                style: GoogleFonts.splineSans(color: Colors.grey[500]),
+              ),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+              ),
+              icon: const Icon(Icons.unfold_more, color: Colors.grey),
+              isExpanded: true,
+              style: GoogleFonts.splineSans(
+                color: Colors.grey[800],
+                fontSize: 16,
+              ),
+              onChanged: (Map<String, dynamic>? newValue) {
+                setState(() {
+                  _selectedVehicle = newValue;
+                });
+              },
+              items: _vehicles.map<DropdownMenuItem<Map<String, dynamic>>>((
+                Map<String, dynamic> vehicle,
+              ) {
+                final vehicleName =
+                    '${vehicle['make'] ?? ''} ${vehicle['model'] ?? ''}';
+                return DropdownMenuItem<Map<String, dynamic>>(
+                  value: vehicle,
+                  child: Text(vehicleName),
+                );
+              }).toList(),
+            ),
     );
   }
 
@@ -192,7 +248,7 @@ class _CustomerBookServiceScreenState extends State<CustomerBookServiceScreen> {
         crossAxisCount: 2,
         crossAxisSpacing: 16.0,
         mainAxisSpacing: 16.0,
-        childAspectRatio: 1.0, // Adjust as needed
+        childAspectRatio: 0.85, // Adjust as needed
       ),
       itemCount: _services.length,
       itemBuilder: (context, index) {
