@@ -10,6 +10,8 @@ class CustomerChooseMechanicScreen extends StatefulWidget {
   final String address;
   final String city;
   final String issueDescription;
+  final double? latitude;
+  final double? longitude;
 
   const CustomerChooseMechanicScreen({
     super.key,
@@ -19,6 +21,8 @@ class CustomerChooseMechanicScreen extends StatefulWidget {
     required this.address,
     required this.city,
     required this.issueDescription,
+    this.latitude,
+    this.longitude,
   });
 
   @override
@@ -165,11 +169,18 @@ class _CustomerChooseMechanicScreenState
                             address: widget.address,
                             city: widget.city,
                             issueDescription: widget.issueDescription,
+                            latitude: widget.latitude,
+                            longitude: widget.longitude,
                             mechanicId: _selectedMechanicId!,
                             mechanicName:
                                 selectedMechanicData['fullName'] ?? 'N/A',
                             mechanicImage:
-                                selectedMechanicData['photoURL'] ?? '',
+                                (selectedMechanicData['photoURL'] is String &&
+                                    (selectedMechanicData['photoURL'] as String)
+                                        .isNotEmpty)
+                                ? selectedMechanicData['photoURL']
+                                : null,
+                            mechanicPhone: selectedMechanicData['phone'] ?? '',
                             mechanicRating:
                                 selectedMechanicData['rating']?.toString() ??
                                 'N/A',

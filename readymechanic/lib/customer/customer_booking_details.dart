@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart' as url_launcher;
 import 'package:readymechanic/customer/customer_booking.dart';
 
 class CustomerBookingDetailsScreen extends StatefulWidget {
@@ -13,13 +15,116 @@ class CustomerBookingDetailsScreen extends StatefulWidget {
 class _CustomerBookingDetailsScreenState
     extends State<CustomerBookingDetailsScreen> {
   final _primaryColor = const Color(0xFFea2a33);
+  bool _isPaying = false;
+
+  Future<void> _openMap(double? lat, double? lng) async {
+    if (lat == null || lng == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Location not available for this booking.'),
+        ),
+      );
+      return;
+    }
+    final Uri googleMapsUrl = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
+    );
+
+    try {
+      if (await url_launcher.canLaunchUrl(googleMapsUrl)) {
+        await url_launcher.launchUrl(googleMapsUrl);
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open the map.')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An error occurred while opening the map: $e')),
+      );
+    }
+  }
+
+  Future<void> _makePhoneCall(String? phoneNumber) async {
+    if (phoneNumber == null || phoneNumber.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Phone number is not available.')),
+      );
+      return;
+    }
+
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    try {
+      if (await url_launcher.canLaunchUrl(phoneUri)) {
+        await url_launcher.launchUrl(phoneUri);
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open the dialer.')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('An error occurred: $e')));
+    }
+  }
+
+  Future<void> _handlePayment(String bookingId) async {
+    setState(() {
+      _isPaying = true;
+    });
+
+    // Simulate a network call for payment processing
+    await Future.delayed(const Duration(seconds: 2));
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('bookings')
+          .doc(bookingId)
+          .update({'paymentStatus': 'paid'});
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment Successful!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Payment failed: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPaying = false;
+        });
+      }
+    }
+  }
+
+  void _downloadInvoice() {
+    // TODO: Implement actual invoice generation and download logic
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Downloading invoice...')));
+  }
 
   @override
   Widget build(BuildContext context) {
     final booking =
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>? ??
         {};
-
+    final String bookingId = booking['bookingId'] ?? '';
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -39,19 +144,33 @@ class _CustomerBookingDetailsScreenState
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            _buildMechanicDetailsCard(booking),
-            const SizedBox(height: 16),
-            _buildServiceDetailsCard(booking),
-            const SizedBox(height: 16),
-            _buildStatusAndCostCard(booking),
-            const SizedBox(height: 16),
-            _buildOtpCard(booking),
-          ],
-        ),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('bookings')
+            .doc(bookingId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final updatedBooking = snapshot.data!.data() as Map<String, dynamic>;
+          updatedBooking['bookingId'] = snapshot.data!.id; // Keep the id
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                _buildMechanicDetailsCard(updatedBooking),
+                const SizedBox(height: 16),
+                _buildServiceDetailsCard(updatedBooking),
+                const SizedBox(height: 16),
+                _buildStatusAndCostCard(updatedBooking),
+                const SizedBox(height: 16),
+                _buildOtpCard(updatedBooking),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -85,9 +204,17 @@ class _CustomerBookingDetailsScreenState
             children: [
               CircleAvatar(
                 radius: 28,
-                backgroundImage: NetworkImage(
-                  booking['mechanicImage'] ?? 'https://via.placeholder.com/150',
-                ),
+                backgroundColor: Colors.grey[200],
+                backgroundImage:
+                    (booking['mechanicImage'] != null &&
+                        booking['mechanicImage'].isNotEmpty)
+                    ? NetworkImage(booking['mechanicImage'])
+                    : null,
+                child:
+                    (booking['mechanicImage'] == null ||
+                        booking['mechanicImage'].isEmpty)
+                    ? Icon(Icons.person, color: Colors.grey[400])
+                    : null,
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -110,7 +237,9 @@ class _CustomerBookingDetailsScreenState
                 ),
               ),
               IconButton(
-                onPressed: () {},
+                onPressed: () {
+                  _makePhoneCall(booking['mechanicPhone'] as String?);
+                },
                 icon: const Icon(Icons.phone, color: Colors.white),
                 style: IconButton.styleFrom(
                   backgroundColor: _primaryColor,
@@ -167,6 +296,10 @@ class _CustomerBookingDetailsScreenState
             icon: Icons.location_on,
             title: booking['address'] ?? 'N/A',
             isLink: true,
+            onLinkTap: () {
+              final location = booking['location'] as Map<String, dynamic>?;
+              _openMap(location?['lat'], location?['lng']);
+            },
             linkText: 'View on Map',
           ),
         ],
@@ -209,20 +342,51 @@ class _CustomerBookingDetailsScreenState
             iconBgColor: const Color(0xFFF5F5F5),
           ),
           const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.download, size: 20),
-            label: const Text('Download Invoice'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _primaryColor,
-              foregroundColor: Colors.white,
-              minimumSize: const Size(double.infinity, 48),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-            ),
-          ),
+          if (booking['status'] == 'completed') _buildPaymentButton(booking),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentButton(Map<String, dynamic> booking) {
+    final isPaid = booking['paymentStatus'] == 'paid';
+
+    if (isPaid) {
+      return ElevatedButton.icon(
+        onPressed: _downloadInvoice,
+        icon: const Icon(Icons.download, size: 20),
+        label: const Text('Download Invoice'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(double.infinity, 48),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+        ),
+      );
+    }
+
+    return ElevatedButton.icon(
+      onPressed: _isPaying ? null : () => _handlePayment(booking['bookingId']),
+      icon: _isPaying
+          ? const SizedBox.shrink()
+          : const Icon(Icons.payment, size: 20),
+      label: _isPaying
+          ? const SizedBox(
+              height: 24,
+              width: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            )
+          : Text('Pay Now (₹${booking['serviceCost'] ?? 0})'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: _primaryColor,
+        foregroundColor: Colors.white,
+        minimumSize: const Size(double.infinity, 48),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
     );
   }
@@ -349,6 +513,7 @@ class _CustomerBookingDetailsScreenState
     Color? iconBgColor,
     bool isLink = false,
     String? linkText,
+    VoidCallback? onLinkTap,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -379,7 +544,7 @@ class _CustomerBookingDetailsScreenState
                 ),
               if (isLink)
                 TextButton(
-                  onPressed: () {},
+                  onPressed: onLinkTap,
                   style: TextButton.styleFrom(
                     padding: EdgeInsets.zero,
                     alignment: Alignment.centerLeft,

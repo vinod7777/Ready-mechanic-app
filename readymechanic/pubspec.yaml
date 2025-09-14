@@ -42,6 +42,7 @@ dependencies:
   # ... other dependencies
   geolocator: ^12.0.0
   geocoding: ^3.0.0
+  url_launcher: ^6.3.0
 
 
 dev_dependencies:

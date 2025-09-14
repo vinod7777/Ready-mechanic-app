@@ -32,6 +32,8 @@ class _CustomerLocationScreenState extends State<CustomerLocationScreen> {
   final _issueController = TextEditingController();
   bool _isLoadingAddress = true;
   bool _isGettingLocation = false;
+  double? _latitude;
+  double? _longitude;
 
   @override
   void initState() {
@@ -94,6 +96,8 @@ class _CustomerLocationScreenState extends State<CustomerLocationScreen> {
         _addressController.text = '${place.street}, ${place.subLocality}'
             .replaceAll(', ,', ',');
         _cityController.text = place.locality ?? '';
+        _latitude = position.latitude;
+        _longitude = position.longitude;
       }
     } catch (e) {
       if (mounted) {
@@ -103,6 +107,31 @@ class _CustomerLocationScreenState extends State<CustomerLocationScreen> {
       }
     } finally {
       if (mounted) setState(() => _isGettingLocation = false);
+    }
+  }
+
+  Future<void> _geocodeAddressAndContinue() async {
+    if (_addressController.text.isEmpty || _cityController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please provide a valid address and city.'),
+        ),
+      );
+      return;
+    }
+
+    try {
+      List<geocoding.Location> locations = await geocoding.locationFromAddress(
+        '${_addressController.text}, ${_cityController.text}',
+      );
+      if (locations.isNotEmpty) {
+        _navigateToChooseMechanic(
+          locations.first.latitude,
+          locations.first.longitude,
+        );
+      }
+    } catch (e) {
+      _navigateToChooseMechanic(null, null);
     }
   }
 
@@ -347,21 +376,9 @@ class _CustomerLocationScreenState extends State<CustomerLocationScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CustomerChooseMechanicScreen(
-                      vehicle: widget.vehicle,
-                      serviceName: widget.serviceName,
-                      servicePrice: widget.servicePrice,
-                      address: _addressController.text,
-                      city: _cityController.text,
-                      issueDescription: _issueController.text,
-                    ),
-                  ),
-                );
-              },
+              onPressed: (_latitude != null && _longitude != null)
+                  ? () => _navigateToChooseMechanic(_latitude, _longitude)
+                  : _geocodeAddressAndContinue,
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryColor,
                 foregroundColor: Colors.white,
@@ -382,6 +399,24 @@ class _CustomerLocationScreenState extends State<CustomerLocationScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _navigateToChooseMechanic(double? lat, double? lng) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CustomerChooseMechanicScreen(
+          vehicle: widget.vehicle,
+          serviceName: widget.serviceName,
+          servicePrice: widget.servicePrice,
+          address: _addressController.text,
+          city: _cityController.text,
+          issueDescription: _issueController.text,
+          latitude: lat,
+          longitude: lng,
+        ),
       ),
     );
   }

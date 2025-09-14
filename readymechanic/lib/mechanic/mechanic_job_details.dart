@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:url_launcher/url_launcher.dart' as url_launcher;
+
 class MechanicJobDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> job;
 
@@ -19,6 +21,63 @@ class _MechanicJobDetailsScreenState extends State<MechanicJobDetailsScreen> {
   final Color _textPrimary = const Color(0xFF1a1a1a); // text-gray-900
   final Color _textSecondary = const Color(0xFF6b7280); // text-gray-500/600
 
+  Future<void> _openMap(double? lat, double? lng) async {
+    if (lat == null || lng == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Location not available for this job.')),
+      );
+      return;
+    }
+    // Universal URL for starting navigation. This will open in a browser or the Maps app.
+    final Uri googleMapsUrl = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng',
+    );
+    try {
+      if (await url_launcher.canLaunchUrl(googleMapsUrl)) {
+        await url_launcher.launchUrl(googleMapsUrl);
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open navigation.')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('An error occurred while opening navigation: $e'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _makePhoneCall(String? phoneNumber) async {
+    if (phoneNumber == null || phoneNumber.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Customer phone number is not available.')),
+      );
+      return;
+    }
+
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    try {
+      if (await url_launcher.canLaunchUrl(phoneUri)) {
+        await url_launcher.launchUrl(phoneUri);
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open the dialer.')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An error occurred: $e')),
+      );
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -115,6 +174,14 @@ class _MechanicJobDetailsScreenState extends State<MechanicJobDetailsScreen> {
                     ),
                   ],
                 ),
+                const Spacer(),
+                IconButton(
+                  onPressed: () {
+                    _makePhoneCall(widget.job['customerPhone'] as String?);
+                  },
+                  icon: Icon(Icons.phone, color: _primaryColor),
+                  tooltip: 'Call Customer',
+                ),
               ],
             ),
             const Divider(height: 32),
@@ -151,7 +218,7 @@ class _MechanicJobDetailsScreenState extends State<MechanicJobDetailsScreen> {
         children: [
           CircleAvatar(
             radius: 20,
-            backgroundColor: _primaryColor.withOpacity(0.1),
+            backgroundColor: _primaryColor.withAlpha((255 * 0.1).round()),
             child: Icon(icon, color: _primaryColor, size: 20),
           ),
           const SizedBox(width: 16),
@@ -249,7 +316,11 @@ class _MechanicJobDetailsScreenState extends State<MechanicJobDetailsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: () {
+                final location =
+                    widget.job['location'] as Map<String, dynamic>?;
+                _openMap(location?['lat'], location?['lng']);
+              },
               icon: const Icon(Icons.navigation),
               label: const Text('Navigate to Customer'),
               style: ElevatedButton.styleFrom(
@@ -306,7 +377,7 @@ class _MechanicJobDetailsScreenState extends State<MechanicJobDetailsScreen> {
               if (otpController.text == widget.job['serviceStartOTP']) {
                 FirebaseFirestore.instance
                     .collection('bookings')
-                    .doc(widget.job['bookingId']) // Use the passed bookingId
+                    .doc(widget.job['bookingId'])
                     .update({'status': 'inprogress'});
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(

@@ -13,8 +13,11 @@ class CustomerConfirmationScreen extends StatefulWidget {
   final String issueDescription;
   final String mechanicId;
   final String mechanicName;
-  final String mechanicImage;
+  final String? mechanicImage;
+  final String mechanicPhone;
   final String mechanicRating;
+  final double? latitude;
+  final double? longitude;
 
   const CustomerConfirmationScreen({
     super.key,
@@ -27,7 +30,10 @@ class CustomerConfirmationScreen extends StatefulWidget {
     required this.mechanicId,
     required this.mechanicName,
     required this.mechanicImage,
+    required this.mechanicPhone,
     required this.mechanicRating,
+    this.latitude,
+    this.longitude,
   });
 
   @override
@@ -352,7 +358,17 @@ class _CustomerConfirmationScreenState
                     children: [
                       CircleAvatar(
                         radius: 32,
-                        backgroundImage: NetworkImage(widget.mechanicImage),
+                        backgroundColor: Colors.grey[200],
+                        backgroundImage:
+                            (widget.mechanicImage != null &&
+                                widget.mechanicImage!.isNotEmpty)
+                            ? NetworkImage(widget.mechanicImage!)
+                            : null,
+                        child:
+                            (widget.mechanicImage == null ||
+                                widget.mechanicImage!.isEmpty)
+                            ? Icon(Icons.person, color: Colors.grey[400])
+                            : null,
                       ),
                       const SizedBox(width: 16),
                       Column(
@@ -457,40 +473,58 @@ class _CustomerConfirmationScreenState
     });
 
     String? customerImage;
+    String customerName = user.displayName ?? 'N/A';
+    String? customerPhone;
     try {
-      final customerDoc =
-          await FirebaseFirestore.instance.collection('customers').doc(user.uid).get();
+      final customerDoc = await FirebaseFirestore.instance
+          .collection('customers')
+          .doc(user.uid)
+          .get();
       if (customerDoc.exists) {
-        customerImage = customerDoc.data()?['photoURL'];
+        final data = customerDoc.data() as Map<String, dynamic>;
+        customerImage = data['photoURL'];
+        customerName = data['fullName'] ?? customerName;
+        customerPhone = data['phone'];
       }
     } catch (_) {}
 
     try {
       final serviceStartOTP = _generateOTP();
 
-      await FirebaseFirestore.instance.collection('bookings').add({
-        'customerId': user.uid,
-        'customerName': user.displayName ?? 'N/A',
-        'customerImage': customerImage,
-        'mechanicId': widget.mechanicId,
-        'mechanicName': widget.mechanicName,
-        'mechanicImage': widget.mechanicImage, // Added mechanic image
-        'service': widget.serviceName, // Corrected field name
-        'serviceCost': widget.servicePrice, // Corrected field name
-        'vehicle': {
-          // Saving as a map to match your structure
-          'make': widget.vehicle.split(' - ')[0],
-          'model': widget.vehicle.split(' - ').length > 1
-              ? widget.vehicle.split(' - ')[1]
-              : '',
-          'type': 'Car', // Assuming 'Car' for now, can be made dynamic later
-        },
-        'address': '${widget.address}, ${widget.city}',
-        'description': widget.issueDescription, // Corrected field name
-        'createdAt': FieldValue.serverTimestamp(), // Corrected field name
-        'status': 'pending',
-        'serviceStartOTP': serviceStartOTP,
-      });
+      final bookingRef = await FirebaseFirestore.instance
+          .collection('bookings')
+          .add({
+            'customerId': user.uid,
+            'customerName': customerName,
+            'customerImage': customerImage,
+            'customerPhone': customerPhone,
+            'mechanicId': widget.mechanicId,
+            'mechanicName': widget.mechanicName,
+            'mechanicImage': widget.mechanicImage, // Added mechanic image
+            'mechanicPhone': widget.mechanicPhone,
+            'service': widget.serviceName, // Corrected field name
+            'serviceCost': widget.servicePrice, // Corrected field name
+            'vehicle': {
+              // Saving as a map to match your structure
+              'make': widget.vehicle.split(' - ')[0],
+              'model': widget.vehicle.split(' - ').length > 1
+                  ? widget.vehicle.split(' - ')[1]
+                  : '',
+              'type':
+                  'Car', // Assuming 'Car' for now, can be made dynamic later
+            },
+            'address': '${widget.address}, ${widget.city}',
+            'description': widget.issueDescription, // Corrected field name
+            'createdAt': FieldValue.serverTimestamp(), // Corrected field name
+            'status': 'pending',
+            'paymentStatus': 'unpaid', // Initial payment status
+            'serviceStartOTP': serviceStartOTP,
+          });
+      if (widget.latitude != null && widget.longitude != null) {
+        bookingRef.update({
+          'location': {'lat': widget.latitude, 'lng': widget.longitude},
+        });
+      }
 
       if (!mounted) return;
       Navigator.of(context).pushNamedAndRemoveUntil(

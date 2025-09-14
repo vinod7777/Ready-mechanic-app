@@ -69,7 +69,9 @@ class _MechanicJobScreenState extends State<MechanicJobScreen> {
             padding: const EdgeInsets.all(16.0),
             itemCount: jobs.length,
             itemBuilder: (context, index) {
-              return _buildJobCard(jobs[index].data() as Map<String, dynamic>);
+              final jobData = jobs[index].data() as Map<String, dynamic>;
+              jobData['bookingId'] = jobs[index].id;
+              return _buildJobCard(jobData);
             },
           );
         },
