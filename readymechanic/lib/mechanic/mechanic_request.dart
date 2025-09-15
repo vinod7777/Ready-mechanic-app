@@ -53,6 +53,7 @@ class _MechanicRequestScreenState extends State<MechanicRequestScreen> {
               isEqualTo: FirebaseAuth.instance.currentUser?.uid,
             )
             .where('status', isEqualTo: 'pending')
+            .orderBy('createdAt', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {

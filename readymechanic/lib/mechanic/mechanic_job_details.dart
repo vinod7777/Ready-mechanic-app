@@ -21,6 +21,7 @@ class _MechanicJobDetailsScreenState extends State<MechanicJobDetailsScreen> {
   final Color _textPrimary = const Color(0xFF1a1a1a); // text-gray-900
   final Color _textSecondary = const Color(0xFF6b7280); // text-gray-500/600
 
+  bool _isUpdatingStatus = false;
   Future<void> _openMap(double? lat, double? lng) async {
     if (lat == null || lng == null) {
       if (!mounted) return;
@@ -56,7 +57,9 @@ class _MechanicJobDetailsScreenState extends State<MechanicJobDetailsScreen> {
     if (phoneNumber == null || phoneNumber.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Customer phone number is not available.')),
+        const SnackBar(
+          content: Text('Customer phone number is not available.'),
+        ),
       );
       return;
     }
@@ -73,11 +76,37 @@ class _MechanicJobDetailsScreenState extends State<MechanicJobDetailsScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('An error occurred: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('An error occurred: $e')));
     }
   }
+
+  Future<void> _updateBookingStatus(String status) async {
+    if (_isUpdatingStatus) return;
+    setState(() {
+      _isUpdatingStatus = true;
+    });
+    try {
+      await FirebaseFirestore.instance
+          .collection('bookings')
+          .doc(widget.job['bookingId'])
+          .update({'status': status});
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Job marked as $status!')));
+    } catch (e) {
+      // Handle error
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUpdatingStatus = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -99,20 +128,39 @@ class _MechanicJobDetailsScreenState extends State<MechanicJobDetailsScreen> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionTitle('Customer Details'),
-            _buildCustomerDetailsCard(),
-            const SizedBox(height: 24),
-            _buildSectionTitle('Payment Status'),
-            _buildPaymentStatusCard(),
-          ],
-        ),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('bookings')
+            .doc(widget.job['bookingId'])
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return const Center(child: Text('Job details not found.'));
+          }
+
+          final jobData = snapshot.data!.data() as Map<String, dynamic>;
+          // Keep original bookingId
+          jobData['bookingId'] = widget.job['bookingId'];
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionTitle('Customer Details'),
+                _buildCustomerDetailsCard(jobData),
+                const SizedBox(height: 24),
+                _buildSectionTitle('Payment Status'),
+                _buildPaymentStatusCard(jobData),
+              ],
+            ),
+          );
+        },
       ),
-      bottomNavigationBar: _buildFooterButtons(),
+      bottomNavigationBar: _buildFooterButtons(widget.job),
     );
   }
 
@@ -130,8 +178,8 @@ class _MechanicJobDetailsScreenState extends State<MechanicJobDetailsScreen> {
     );
   }
 
-  Widget _buildCustomerDetailsCard() {
-    final vehicle = widget.job['vehicle'] as Map<String, dynamic>? ?? {};
+  Widget _buildCustomerDetailsCard(Map<String, dynamic> jobData) {
+    final vehicle = jobData['vehicle'] as Map<String, dynamic>? ?? {};
     return Card(
       elevation: 2,
       shadowColor: Colors.black.withAlpha((255 * 0.05).round()),
@@ -146,13 +194,13 @@ class _MechanicJobDetailsScreenState extends State<MechanicJobDetailsScreen> {
                   radius: 32,
                   backgroundColor: Colors.grey[200],
                   backgroundImage:
-                      (widget.job['customerImage'] != null &&
-                          widget.job['customerImage'].isNotEmpty)
-                      ? NetworkImage(widget.job['customerImage'])
+                      (jobData['customerImage'] != null &&
+                          jobData['customerImage'].isNotEmpty)
+                      ? NetworkImage(jobData['customerImage'])
                       : null,
                   child:
-                      (widget.job['customerImage'] == null ||
-                          widget.job['customerImage'].isEmpty)
+                      (jobData['customerImage'] == null ||
+                          jobData['customerImage'].isEmpty)
                       ? Icon(Icons.person, color: Colors.grey[400], size: 32)
                       : null,
                 ),
@@ -161,7 +209,7 @@ class _MechanicJobDetailsScreenState extends State<MechanicJobDetailsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.job['customerName'] ?? 'N/A',
+                      jobData['customerName'] ?? 'N/A',
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -177,7 +225,7 @@ class _MechanicJobDetailsScreenState extends State<MechanicJobDetailsScreen> {
                 const Spacer(),
                 IconButton(
                   onPressed: () {
-                    _makePhoneCall(widget.job['customerPhone'] as String?);
+                    _makePhoneCall(jobData['customerPhone'] as String?);
                   },
                   icon: Icon(Icons.phone, color: _primaryColor),
                   tooltip: 'Call Customer',
@@ -188,12 +236,12 @@ class _MechanicJobDetailsScreenState extends State<MechanicJobDetailsScreen> {
             _buildDetailRow(
               Icons.location_on,
               'Location',
-              widget.job['address'] ?? 'N/A',
+              jobData['address'] ?? 'N/A',
             ),
             _buildDetailRow(
               Icons.schedule,
               'Scheduled Time',
-              (widget.job['createdAt'] as Timestamp?)
+              (jobData['createdAt'] as Timestamp?)
                       ?.toDate()
                       .toString()
                       .substring(0, 16) ??
@@ -202,7 +250,7 @@ class _MechanicJobDetailsScreenState extends State<MechanicJobDetailsScreen> {
             _buildDetailRow(
               Icons.build,
               'Service',
-              widget.job['service'] ?? 'N/A',
+              jobData['service'] ?? 'N/A',
             ),
           ],
         ),
@@ -246,52 +294,61 @@ class _MechanicJobDetailsScreenState extends State<MechanicJobDetailsScreen> {
     );
   }
 
-  Widget _buildPaymentStatusCard() {
+  Widget _buildPaymentStatusCard(Map<String, dynamic> jobData) {
+    final isPaid = jobData['paymentStatus'] == 'paid';
+
     return Card(
       elevation: 2,
       shadowColor: Colors.black.withAlpha((255 * 0.05).round()),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                const CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Color(0xFFdcfce7), // green-100
-                  child: Icon(
-                    Icons.paid,
-                    color: Color(0xFF16a34a),
-                  ), // green-600
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Payment Received',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontWeight: FontWeight.w500,
-                    color: _textPrimary,
+        child: Opacity(
+          opacity: isPaid ? 1.0 : 0.6,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: isPaid
+                        ? const Color(0xFFdcfce7)
+                        : const Color(0xFFffedd5),
+                    child: Icon(
+                      isPaid ? Icons.paid : Icons.hourglass_bottom,
+                      color: isPaid
+                          ? const Color(0xFF16a34a)
+                          : const Color(0xFFc2410c),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            Text(
-              '₹${widget.job['serviceCost'] ?? 0}',
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: _textPrimary,
+                  const SizedBox(width: 12),
+                  Text(
+                    isPaid ? 'Payment Received' : 'Payment Pending',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontWeight: FontWeight.w500,
+                      color: _textPrimary,
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+              Text(
+                '₹${jobData['serviceCost'] ?? 0}',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: _textPrimary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildFooterButtons() {
-    final status = (widget.job['status'] as String?)?.toLowerCase();
+  Widget _buildFooterButtons(Map<String, dynamic> jobData) {
+    final status = (jobData['status'] as String?)?.toLowerCase();
     return Container(
       // Wrap with a container
       padding: const EdgeInsets.fromLTRB(
@@ -317,8 +374,7 @@ class _MechanicJobDetailsScreenState extends State<MechanicJobDetailsScreen> {
           children: [
             ElevatedButton.icon(
               onPressed: () {
-                final location =
-                    widget.job['location'] as Map<String, dynamic>?;
+                final location = jobData['location'] as Map<String, dynamic>?;
                 _openMap(location?['lat'], location?['lng']);
               },
               icon: const Icon(Icons.navigation),
@@ -333,28 +389,49 @@ class _MechanicJobDetailsScreenState extends State<MechanicJobDetailsScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            ElevatedButton.icon(
-              onPressed: status == 'accepted' ? () => _showOtpDialog() : null,
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('Start Service'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _primaryColor.withAlpha((255 * 0.1).round()),
-                foregroundColor: _primaryColor,
-                minimumSize: const Size(double.infinity, 48),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            if (status == 'accepted')
+              ElevatedButton.icon(
+                onPressed: () => _showOtpDialog(jobData),
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Start Service'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primaryColor.withAlpha((255 * 0.1).round()),
+                  foregroundColor: _primaryColor,
+                  minimumSize: const Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                disabledBackgroundColor: Colors.grey[200],
-                disabledForegroundColor: Colors.grey[500],
+              )
+            else if (status == 'inprogress')
+              ElevatedButton.icon(
+                onPressed: _isUpdatingStatus
+                    ? null
+                    : () => _updateBookingStatus('completed'),
+                icon: const Icon(Icons.check_circle),
+                label: const Text('Mark as Completed'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF16a34a), // green-600
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  disabledBackgroundColor: Colors.grey[300],
+                ),
+              )
+            else if (status == 'completed')
+              const Text(
+                'This job has been completed.',
+                style: TextStyle(color: Colors.green),
               ),
-            ),
           ],
         ),
       ),
     );
   }
 
-  void _showOtpDialog() {
+  void _showOtpDialog(Map<String, dynamic> jobData) {
     final otpController = TextEditingController();
     showDialog(
       context: context,
@@ -374,10 +451,10 @@ class _MechanicJobDetailsScreenState extends State<MechanicJobDetailsScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              if (otpController.text == widget.job['serviceStartOTP']) {
+              if (otpController.text == jobData['serviceStartOTP']) {
                 FirebaseFirestore.instance
                     .collection('bookings')
-                    .doc(widget.job['bookingId'])
+                    .doc(jobData['bookingId'])
                     .update({'status': 'inprogress'});
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(

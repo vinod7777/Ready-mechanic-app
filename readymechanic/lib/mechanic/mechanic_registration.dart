@@ -28,7 +28,6 @@ class _MechanicRegistrationScreenState
   final _skillsController = TextEditingController();
   final _licenseController = TextEditingController();
   final _aadharController = TextEditingController();
-  final _accountNameController = TextEditingController();
   final _accountNumberController = TextEditingController();
   final _ifscController = TextEditingController();
 
@@ -49,7 +48,6 @@ class _MechanicRegistrationScreenState
     _skillsController.dispose();
     _licenseController.dispose();
     _aadharController.dispose();
-    _accountNameController.dispose();
     _accountNumberController.dispose();
     _ifscController.dispose();
     super.dispose();
@@ -175,13 +173,6 @@ class _MechanicRegistrationScreenState
               ),
               const SizedBox(height: 24),
               _buildSectionTitle('Bank Details'),
-              TextFormField(
-                controller: _accountNameController,
-                decoration: _inputDecoration('Account Holder Name'),
-                validator: (v) => _validateNonEmpty(v, 'account holder name'),
-                style: GoogleFonts.splineSans(fontSize: 16),
-              ),
-              const SizedBox(height: 16),
               TextFormField(
                 controller: _accountNumberController,
                 decoration: _inputDecoration('Account Number'),

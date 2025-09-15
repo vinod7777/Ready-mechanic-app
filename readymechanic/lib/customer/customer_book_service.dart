@@ -39,6 +39,7 @@ class _CustomerBookServiceScreenState extends State<CustomerBookServiceScreen> {
     },
     {'name': 'Engine Diagnostics', 'icon': Icons.build, 'price': 799},
     {'name': 'Starting Problems', 'icon': Icons.car_repair, 'price': 599},
+    
   ];
 
   @override

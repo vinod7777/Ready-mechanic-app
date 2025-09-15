@@ -25,7 +25,6 @@ class _CustomerBookingsListScreenState
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(120.0),
         child: AppBar(
-          
           title: Text(
             'Bookings',
             style: GoogleFonts.splineSans(
@@ -86,7 +85,7 @@ class _CustomerBookingsListScreenState
       query = query.where('status', isEqualTo: _selectedFilter.toLowerCase());
     }
 
-    return query.snapshots();
+    return query.orderBy('createdAt', descending: true).snapshots();
   }
 
   String _capitalize(String s) {

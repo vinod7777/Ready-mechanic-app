@@ -53,6 +53,7 @@ class _MechanicJobScreenState extends State<MechanicJobScreen> {
               isEqualTo: FirebaseAuth.instance.currentUser?.uid,
             )
             .where('status', whereIn: ['accepted', 'inprogress', 'completed'])
+            .orderBy('createdAt', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
