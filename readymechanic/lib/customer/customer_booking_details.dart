@@ -2,6 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart' as url_launcher;
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:io';
+import 'package:open_filex/open_filex.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:readymechanic/customer/customer_booking.dart';
 
 class CustomerBookingDetailsScreen extends StatefulWidget {
@@ -112,11 +119,168 @@ class _CustomerBookingDetailsScreenState
     }
   }
 
-  void _downloadInvoice() {
-    // TODO: Implement actual invoice generation and download logic
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Downloading invoice...')));
+  Future<void> _downloadInvoice(Map<String, dynamic> booking) async {
+    // 1. Request permission only if needed (Android 10 and below)
+    if (Platform.isAndroid) {
+      final deviceInfo = await DeviceInfoPlugin().androidInfo;
+      if (deviceInfo.version.sdkInt <= 29) {
+        // Android 10 or below
+        final status = await Permission.storage.request();
+        if (status.isDenied) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Storage permission is required to download invoice.',
+                ),
+              ),
+            );
+          }
+          return;
+        }
+        if (status.isPermanentlyDenied) {
+          if (mounted) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Permission Required'),
+                content: const Text(
+                  'Storage permission is permanently denied. Please go to app settings to enable it.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () => openAppSettings(),
+                    child: const Text('Open Settings'),
+                  ),
+                ],
+              ),
+            );
+          }
+          return;
+        }
+      }
+    }
+
+    // 2. Create PDF
+    final pdf = pw.Document();
+    final bookingId = booking['bookingId'] ?? 'N/A';
+    final serviceDate = (booking['createdAt'] as Timestamp?)?.toDate();
+    final dateString = serviceDate != null
+        ? '${serviceDate.day}/${serviceDate.month}/${serviceDate.year}'
+        : 'N/A';
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'Invoice',
+                style: pw.TextStyle(
+                  fontSize: 24,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 20),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Booking ID: $bookingId'),
+                  pw.Text('Date: $dateString'),
+                ],
+              ),
+              pw.Divider(height: 20),
+              pw.Text(
+                'Mechanic Details:',
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+              ),
+              pw.Text('Name: ${booking['mechanicName'] ?? 'N/A'}'),
+              pw.Text('Phone: ${booking['mechanicPhone'] ?? 'N/A'}'),
+              pw.SizedBox(height: 20),
+              pw.Text(
+                'Customer Details:',
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+              ),
+              pw.Text('Name: ${booking['customerName'] ?? 'N/A'}'),
+              pw.Text('Phone: ${booking['customerPhone'] ?? 'N/A'}'),
+              pw.SizedBox(height: 20),
+              pw.Text(
+                'Service Details:',
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+              ),
+              pw.Table.fromTextArray(
+                context: context,
+                data: <List<String>>[
+                  <String>['Service', 'Cost'],
+                  <String>[
+                    booking['service'] ?? 'N/A',
+                    '${booking['serviceCost'] ?? 0}',
+                  ],
+                ],
+              ),
+              pw.Divider(height: 20),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.end,
+                children: [
+                  pw.Text(
+                    'Total: ',
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  ),
+                  pw.Text(
+                    '${booking['serviceCost'] ?? 0}',
+                    style: pw.TextStyle(
+                      fontWeight: pw.FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 20),
+              pw.Text(
+                'Payment Status: Paid',
+                style: pw.TextStyle(color: PdfColors.green),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    // 3. Save PDF to device
+    try {
+      Directory? directory;
+      if (Platform.isAndroid) {
+        // On Android, use the public "Downloads" directory for better user access.
+        // This is the correct method from path_provider.
+        directory = await getDownloadsDirectory();
+      } else {
+        // Use app-specific documents directory on iOS and other platforms
+        directory = await getApplicationDocumentsDirectory();
+      }
+      final path = '${directory!.path}/invoice_$bookingId.pdf';
+      final file = File(path);
+      await file.writeAsBytes(await pdf.save());
+
+      // 4. Show success and open file
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Invoice saved to $path')));
+        OpenFilex.open(path);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to save invoice: $e')));
+      }
+    }
   }
 
   @override
@@ -126,7 +290,7 @@ class _CustomerBookingDetailsScreenState
         {};
     final String bookingId = booking['bookingId'] ?? '';
     return Scaffold(
-      backgroundColor: Colors.grey[50], 
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         backgroundColor: Colors.grey[50],
         elevation: 0,
@@ -353,7 +517,7 @@ class _CustomerBookingDetailsScreenState
 
     if (isPaid) {
       return ElevatedButton.icon(
-        onPressed: _downloadInvoice,
+        onPressed: () => _downloadInvoice(booking),
         icon: const Icon(Icons.download, size: 20),
         label: const Text('Download Invoice'),
         style: ElevatedButton.styleFrom(
