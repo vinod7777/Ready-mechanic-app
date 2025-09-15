@@ -9,7 +9,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _animation;
 
@@ -20,9 +21,12 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
-    _animation = Tween<double>(begin: 0.2, end: 1.0).animate(_animationController);
+    _animation = Tween<double>(
+      begin: 0.2,
+      end: 1.0,
+    ).animate(_animationController);
 
-    Timer(const Duration(seconds: 3), () {
+    Timer(const Duration(seconds: 2), () {
       Navigator.of(context).pushReplacementNamed('/login');
     });
   }
@@ -35,24 +39,19 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(
-              'assets/img/logo.png',
-              height: 250,
-              width: 250,
-            ),
+            Image.asset('assets/img/logo.png', height: 250, width: 250),
             const SizedBox(height: 24),
-            
+
             const SizedBox(height: 8),
             Text(
-              'Doorstep automobile services.',
+              'Doorstep automobile services and roadside assistance',
+              textAlign: TextAlign.center,
               style: GoogleFonts.splineSans(
                 fontSize: 18,
                 color: Colors.grey[600],
